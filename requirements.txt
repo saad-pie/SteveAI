@@ -1,0 +1,7 @@
+llama-cpp-python
+customtkinter
+pyttsx3
+numpy
+sounddevice
+whisper
+scipy
