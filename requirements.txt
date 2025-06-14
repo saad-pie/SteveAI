@@ -1,7 +1,10 @@
+flask
+flask_cors
 llama-cpp-python
-customtkinter
-pyttsx3
-numpy
-sounddevice
 whisper
+sounddevice
+numpy
 scipy
+pyttsx3
+customtkinter
+
