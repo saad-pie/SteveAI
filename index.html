@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>STEVE AI - Coming Soon</title>
+
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts -->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
     body {
@@ -12,12 +16,17 @@
       font-family: 'Patrick Hand', cursive;
     }
   </style>
+
+  <!-- React + ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 </head>
 <body class="text-white flex flex-col items-center justify-center min-h-screen px-4">
 
+  <!-- Static Intro -->
   <div class="w-full max-w-3xl text-center">
-    <h1 class="text-5xl mb-2 font-bold tracking-wide">CARROT</h1>
-    <div class="text-4xl mb-6">🥕</div>
+    <h1 class="text-5xl mb-2 font-bold tracking-wide">STEVE AI</h1>
+    <div class="text-4xl mb-6">🤖</div>
 
     <h2 class="text-2xl font-semibold mb-8">WELCOME TO STEVE AI - THE FUTURE</h2>
 
@@ -40,9 +49,16 @@
     </div>
 
     <p class="text-xs text-gray-500 mt-6">
-      By messaging STEVE AI you agree to our <a href="https://saad-pie.github.io/SteveAI/Newpage.html" class="underline">Terms</a> and have read our <a href="#" class="underline">Privacy Policy</a>.
+      By messaging STEVE AI you agree to our
+      <a href="https://saad-pie.github.io/SteveAI/Newpage.html" class="underline">Terms</a>
+      and have read our <a href="#" class="underline">Privacy Policy</a>.
     </p>
   </div>
 
+  <!-- React Root -->
+  <div id="root" class="w-full max-w-xl mt-10"></div>
+
+  <!-- Your app.jsx -->
+  <script type="module" src="app.jsx"></script>
 </body>
 </html>
