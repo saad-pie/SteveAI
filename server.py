@@ -3,8 +3,9 @@ from llama_cpp import Llama
 import tempfile
 import os
 import whisper
-
+from flask_cors import CORS
 app = Flask(__name__)
+CORS(app)  # <-- Allow all origins
 
 # ✅ Load models
 llm = Llama(model_path="./models/llama-2.gguf", n_ctx=4096)
