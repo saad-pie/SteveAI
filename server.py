@@ -7,7 +7,6 @@ from llama_cpp import Llama
 import tempfile
 import os
 import whisper
-from pyngrok import ngrok
 import threading
 import sys
 import importlib
@@ -72,9 +71,7 @@ def voice():
         os.remove(temp.name)
     return jsonify({"transcript": result["text"]})
 
-# ✅ Ngrok tunnel and app run
-public_url = ngrok.connect(5000)
-print("Public ngrok URL:", public_url)
+# ✅ Run Flask app without starting a new ngrok tunnel
 
 def run_app():
     app.run(host="0.0.0.0", port=5000)
