@@ -1,6 +1,3 @@
-import logging
-logging.getLogger("root").setLevel(logging.CRITICAL)
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from llama_cpp import Llama
@@ -8,29 +5,16 @@ import tempfile
 import os
 import whisper
 import threading
-from werkzeug.local import LocalProxy
-
-# 🔧 Prevent RuntimeError from werkzeug LocalProxy .shape inspection
-def safe_shape(self):
-    try:
-        obj = object.__getattribute__(self, '_get_current_object')()
-        return getattr(obj, 'shape', None)
-    except RuntimeError:
-        return None
-
-# Only patch if 'shape' hasn't already been defined
-if not hasattr(LocalProxy, 'shape'):
-    setattr(LocalProxy, 'shape', property(safe_shape))
 
 # ✅ Init Flask
 app = Flask(__name__)
 CORS(app)
 
 # ✅ Load Models
-llm = Llama(model_path="/content/drive/MyDrive/llama-2-7b-chat.Q4_K_M.gguf", n_ctx=4096)
+llm = Llama(model_path="D:/path/to/llama-2-7b-chat.Q4_K_M.gguf", n_ctx=4096)
 whisper_model = whisper.load_model("base")
 
-# ✅ Text Generation Route
+# ✅ Text Generation
 @app.route("/ask", methods=["POST"])
 def ask():
     if not request.is_json:
@@ -46,7 +30,7 @@ def ask():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Whisper Transcription Route
+# ✅ Voice Transcription
 @app.route("/voice", methods=["POST"])
 def voice():
     if "audio" not in request.files:
@@ -58,8 +42,7 @@ def voice():
         os.remove(temp.name)
     return jsonify({"transcript": result["text"]})
 
-# ✅ Run Flask app without starting a new ngrok tunnel
-
+# ✅ Start server (do not use ngrok here)
 def run_app():
     app.run(host="0.0.0.0", port=5000)
 
