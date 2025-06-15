@@ -2,59 +2,91 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Steve AI</title>
   <style>
     body {
+      margin: 0;
+      padding: 0;
       background: #0d0d0d;
       color: #00ffee;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      height: 100vh;
+    }
+
+    #sidebar {
+      width: 250px;
+      background: #111;
+      border-right: 1px solid #00ffee44;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    #sidebar h2 {
+      font-size: 1.2rem;
+      color: #00e6cc;
+      margin-bottom: 10px;
+    }
+
+    .history-item {
+      background: #0d0d0d;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #00ffee44;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    #main {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      height: 100vh;
-      margin: 0;
       padding: 20px;
     }
 
     h1 {
-      margin-bottom: 10px;
+      margin: 0 0 20px 0;
       font-size: 2rem;
       color: #00ffe1;
     }
 
     #chat-box {
-      width: 100%;
-      max-width: 700px;
-      height: 70vh;
+      flex: 1;
       background: rgba(0, 0, 0, 0.4);
       border: 1px solid #00ffee88;
       border-radius: 12px;
       overflow-y: auto;
       padding: 20px;
-      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
     }
 
-    .message {
-      margin: 10px 0;
+    .bubble {
+      max-width: 70%;
+      padding: 12px;
+      margin: 10px;
+      border-radius: 16px;
       white-space: pre-wrap;
+      position: relative;
     }
 
     .user {
-      text-align: right;
+      align-self: flex-end;
+      background: #003355;
       color: #99ccff;
     }
 
     .bot {
-      text-align: left;
+      align-self: flex-start;
+      background: #004d40;
       color: #00ffaa;
     }
 
     #input-area {
       display: flex;
-      width: 100%;
-      max-width: 700px;
+      margin-top: 20px;
     }
 
     input {
@@ -84,86 +116,110 @@
   </style>
 </head>
 <body>
-  <h1>Steve AI Assistant</h1>
-  <div id="chat-box"></div>
-  <div id="input-area">
-    <input type="text" id="message" placeholder="Ask Steve anything..." />
-    <button onclick="sendMessage()">Send</button>
+  <div id="sidebar">
+    <h2>Previous Chats</h2>
+    <div id="chat-history"></div>
+  </div>
+
+  <div id="main">
+    <h1>Steve AI Assistant</h1>
+    <div id="chat-box"></div>
+    <div id="input-area">
+      <input type="text" id="message" placeholder="Ask Steve anything..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
   </div>
 
   <script>
     const chatBox = document.getElementById("chat-box");
     const inputField = document.getElementById("message");
-    const storageKey = "chat-history";
-    let messages = JSON.parse(localStorage.getItem(storageKey) || "[]");
+    const historyPanel = document.getElementById("chat-history");
+    const historyKey = "steve-history";
 
-    // Load saved messages
-    messages.forEach(msg => addMessage(msg.text, msg.sender, false));
+    let session = [];
+    let allChats = JSON.parse(localStorage.getItem(historyKey) || "[]");
 
-    // Focus input on load
-    window.onload = () => inputField.focus();
-
-    // Enter key to send
-    inputField.addEventListener("keypress", function(e) {
-      if (e.key === "Enter") sendMessage();
-    });
-
-    function addMessage(message, sender, save = true) {
-      const msgDiv = document.createElement("div");
-      const now = new Date();
-      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      msgDiv.className = "message " + sender;
-      msgDiv.innerText = `[${time}] ${message}`;
-      chatBox.appendChild(msgDiv);
+    function addBubble(text, sender, save = true) {
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${sender}`;
+      bubble.innerText = text;
+      chatBox.appendChild(bubble);
       chatBox.scrollTop = chatBox.scrollHeight;
 
       if (save) {
-        messages.push({ text: `[${time}] ${message}`, sender });
-        localStorage.setItem(storageKey, JSON.stringify(messages));
+        session.push({ text, sender });
+        saveSession();
       }
     }
 
-    async function simulateTyping(text, delay = 20) {
-      const msgDiv = document.createElement("div");
-      msgDiv.className = "message bot";
-      chatBox.appendChild(msgDiv);
-      chatBox.scrollTop = chatBox.scrollHeight;
-
-      const now = new Date();
-      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-      msgDiv.innerText = `[${time}] Steve: `;
-      for (let i = 0; i < text.length; i++) {
-        msgDiv.innerText += text[i];
-        await new Promise(resolve => setTimeout(resolve, delay));
-        chatBox.scrollTop = chatBox.scrollHeight;
+    function saveSession() {
+      if (session.length > 0) {
+        allChats.push(session);
+        localStorage.setItem(historyKey, JSON.stringify(allChats));
+        updateHistoryPanel();
       }
+    }
 
-      messages.push({ text: msgDiv.innerText, sender: "bot" });
-      localStorage.setItem(storageKey, JSON.stringify(messages));
+    function updateHistoryPanel() {
+      historyPanel.innerHTML = "";
+      allChats.forEach((s, idx) => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerText = s[0]?.text?.slice(0, 30) || "(empty)";
+        div.onclick = () => loadSession(idx);
+        historyPanel.appendChild(div);
+      });
+    }
+
+    function loadSession(index) {
+      chatBox.innerHTML = "";
+      const selected = allChats[index];
+      selected.forEach(msg => addBubble(msg.text, msg.sender, false));
     }
 
     async function sendMessage() {
       const message = inputField.value.trim();
       if (!message) return;
-
-      addMessage("You: " + message, "user");
+      addBubble("You: " + message, "user");
       inputField.value = "";
 
       try {
-        const response = await fetch("https://2bb6-103-73-101-50.ngrok-free.app/chat", {
+        const res = await fetch("https://2bb6-103-73-101-50.ngrok-free.app/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message })
         });
-
-        if (!response.ok) throw new Error("HTTP error " + response.status);
-        const data = await response.json();
-        await simulateTyping(data.response);
-      } catch (error) {
-        addMessage("Error: " + error.message, "bot");
+        const data = await res.json();
+        if (data.response) {
+          await simulateTyping("Steve: " + data.response);
+        } else {
+          addBubble("Error: Invalid response", "bot");
+        }
+      } catch (err) {
+        addBubble("Error: " + err.message, "bot");
       }
     }
+
+    async function simulateTyping(text, delay = 15) {
+      const bubble = document.createElement("div");
+      bubble.className = "bubble bot";
+      chatBox.appendChild(bubble);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      for (let i = 0; i < text.length; i++) {
+        bubble.innerText += text[i];
+        await new Promise(r => setTimeout(r, delay));
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+      session.push({ text, sender: "bot" });
+    }
+
+    // Initialize
+    updateHistoryPanel();
+    inputField.focus();
+    inputField.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
   </script>
 </body>
 </html>
