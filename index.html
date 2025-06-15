@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Jarvis - Voice & Text Assistant</title>
+  <title>Steve AI - Local Memory Assistant</title>
   <script defer src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
@@ -24,13 +24,14 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
   <div class="jarvis-box w-full max-w-3xl">
-    <h1 class="text-3xl font-bold mb-4 glow text-center">Jarvis - Local AI Assistant</h1>
+    <h1 class="text-3xl font-bold mb-4 glow text-center">Steve AI - Memory & Voice Assistant</h1>
 
-    <textarea id="prompt" rows="3" placeholder="Ask Jarvis anything..." class="w-full p-3 text-black rounded mb-4"></textarea>
+    <textarea id="prompt" rows="3" placeholder="Ask Steve anything..." class="w-full p-3 text-black rounded mb-4"></textarea>
 
     <div class="flex justify-between mb-4">
       <button onclick="sendPrompt()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">💬 Send Text</button>
       <button onclick="recordVoice()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white">🎙️ Voice Input</button>
+      <button onclick="clearMemory()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded text-white">🧠 Clear Memory</button>
     </div>
 
     <pre id="response" class="whitespace-pre-wrap text-lg"></pre>
@@ -40,20 +41,35 @@
     async function sendPrompt() {
       const prompt = document.getElementById("prompt").value;
       if (!prompt.trim()) return;
-      document.getElementById("response").textContent = "Jarvis is thinking...";
+
+      const memory = localStorage.getItem("steve_memory") || "";
+      document.getElementById("response").textContent = "Steve is thinking...";
+
       try {
-        const res = await axios.post("http://localhost:5000/ask", { prompt });
+        const res = await axios.post("http://localhost:5000/ask", {
+          prompt,
+          memory_context: memory
+        });
+
         const text = res.data.response;
-        document.getElementById("response").textContent = "Jarvis: " + text;
+        document.getElementById("response").textContent = "Steve: " + text;
+
+        // Save updated memory
+        if (res.data.memory_update) {
+          localStorage.setItem("steve_memory", res.data.memory_update);
+        }
+
         speak(text);
       } catch (err) {
-        document.getElementById("response").textContent = "Error: " + err;
+        document.getElementById("response").textContent = "Error: " + err.message;
       }
     }
 
     function speak(text) {
       const msg = new SpeechSynthesisUtterance(text);
-      msg.voice = speechSynthesis.getVoices().find(v => v.name.includes("Zira") || v.name.includes("Jenny") || v.name.includes("Jarvis")) || null;
+      msg.voice = speechSynthesis.getVoices().find(v => 
+        v.name.includes("Zira") || v.name.includes("Jenny") || v.name.includes("Jarvis")
+      ) || null;
       msg.rate = 1.1;
       speechSynthesis.speak(msg);
     }
@@ -65,9 +81,7 @@
           const mediaRecorder = new MediaRecorder(stream);
           const audioChunks = [];
 
-          mediaRecorder.ondataavailable = e => {
-            audioChunks.push(e.data);
-          };
+          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
 
           mediaRecorder.onstop = async () => {
             const blob = new Blob(audioChunks, { type: 'audio/wav' });
@@ -78,6 +92,7 @@
               method: 'POST',
               body: formData
             });
+
             const data = await res.json();
             document.getElementById("prompt").value = data.transcript;
             sendPrompt();
@@ -89,6 +104,11 @@
         .catch(err => {
           document.getElementById("response").textContent = "Microphone error: " + err.message;
         });
+    }
+
+    function clearMemory() {
+      localStorage.removeItem("steve_memory");
+      document.getElementById("response").textContent = "🧠 Memory cleared.";
     }
   </script>
 </body>
