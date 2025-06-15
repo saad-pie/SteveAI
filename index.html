@@ -7,42 +7,57 @@
   <script defer src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    body { background-color: #0f172a; color: #e2e8f0; }
+    body {
+      background: radial-gradient(circle, #0f172a, #020617);
+      color: #e2e8f0;
+      font-family: 'Courier New', monospace;
+    }
     .jarvis-box {
       background-color: #1e293b;
-      border-radius: 1rem;
+      border-radius: 1.5rem;
       padding: 2rem;
-      box-shadow: 0 0 30px rgba(0,255,255,0.2);
+      box-shadow: 0 0 40px rgba(0, 255, 255, 0.3);
+      animation: glow 3s infinite alternate;
     }
-    .glow { text-shadow: 0 0 10px #00ffff; }
+    .glow {
+      text-shadow: 0 0 10px #00ffff;
+    }
+    @keyframes glow {
+      from { box-shadow: 0 0 20px rgba(0,255,255,0.2); }
+      to { box-shadow: 0 0 40px rgba(0,255,255,0.4); }
+    }
+    textarea:focus {
+      outline: none;
+      border: 2px solid #38bdf8;
+    }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
   <div class="jarvis-box w-full max-w-3xl">
-    <h1 class="text-3xl font-bold mb-4 glow text-center">Steve AI - Local LLaMA Assistant</h1>
+    <h1 class="text-3xl font-bold mb-4 glow text-center">🧠 Steve AI - Local LLaMA Assistant</h1>
     <textarea id="prompt" rows="3" placeholder="Ask Steve anything..." class="w-full p-3 text-black rounded mb-4"></textarea>
-    <div class="flex justify-between mb-4">
-      <button onclick="sendPrompt()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">💬 Send Text</button>
-      <button onclick="recordVoice()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white">🎙️ Voice Input</button>
+    <div class="flex justify-between mb-4 space-x-2">
+      <button onclick="sendPrompt()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white shadow">💬 Send Text</button>
+      <button onclick="recordVoice()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white shadow">🎙️ Voice Input</button>
     </div>
-    <pre id="response" class="whitespace-pre-wrap text-lg"></pre>
+    <pre id="response" class="whitespace-pre-wrap text-lg mt-4 font-mono text-cyan-300"></pre>
   </div>
 
   <script>
-    const baseURL = "https://d644-103-73-101-50.ngrok-free.app";  // updated ngrok URL
+    const baseURL = "https://d644-103-73-101-50.ngrok-free.app"; // replace with your ngrok
 
     async function sendPrompt() {
       const prompt = document.getElementById("prompt").value.trim();
       if (!prompt) return;
 
-      document.getElementById("response").textContent = "Steve is thinking...";
+      document.getElementById("response").textContent = "🧠 Steve is thinking...";
       try {
         const res = await axios.post(`${baseURL}/ask`, { prompt });
         const text = res.data.response;
         document.getElementById("response").textContent = "Steve: " + text;
         speak(text);
       } catch (err) {
-        document.getElementById("response").textContent = "Error: " + (err.response?.data?.error || err.message);
+        document.getElementById("response").textContent = "⚠️ Error: " + (err.response?.data?.error || err.message);
       }
     }
 
@@ -74,14 +89,14 @@
             document.getElementById("prompt").value = data.transcript;
             sendPrompt();
           } catch (err) {
-            document.getElementById("response").textContent = "Voice error: " + err.message;
+            document.getElementById("response").textContent = "🎙️ Voice error: " + err.message;
           }
         };
 
         mediaRecorder.start();
         setTimeout(() => mediaRecorder.stop(), 5000);
       }).catch(err => {
-        document.getElementById("response").textContent = "Microphone error: " + err.message;
+        document.getElementById("response").textContent = "❌ Microphone error: " + err.message;
       });
     }
   </script>
