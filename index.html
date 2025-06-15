@@ -126,7 +126,7 @@
     <div id="chat-box"></div>
     <div id="input-area">
       <input type="text" id="message" placeholder="Ask Steve anything..." />
-      <button onclick="sendMessage()">Send</button>
+      <button id="send-btn">Send</button>
     </div>
   </div>
 
@@ -184,14 +184,14 @@
       inputField.value = "";
 
       try {
-        const res = await fetch("https://4608-35-229-177-23.ngrok-free.app", {
+        const res = await fetch("https://4608-35-229-177-23.ngrok-free.app/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: message })
         });
         const data = await res.json();
         if (data.response) {
-          await simulateTyping("Steve: " + data.response);
+          simulateTyping("Steve: " + data.response);
         } else {
           addBubble("Error: Invalid response", "bot");
         }
@@ -214,12 +214,22 @@
       session.push({ text, sender: "bot" });
     }
 
-    // Initialize
+    // ✅ Setup listeners
+    document.getElementById("send-btn").addEventListener("click", function (e) {
+      e.preventDefault();
+      sendMessage();
+    });
+
+    inputField.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // ✅ Initialize history
     updateHistoryPanel();
     inputField.focus();
-    inputField.addEventListener("keypress", e => {
-      if (e.key === "Enter") sendMessage();
-    });
   </script>
 </body>
 </html>
