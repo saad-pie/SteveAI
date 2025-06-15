@@ -1,45 +1,31 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from llama_cpp import Llama
-import whisper
-import tempfile
-import os
+from pyngrok import ngrok
 
 app = Flask(__name__)
-CORS(app)
 
-# ✅ Use proper absolute path depending on environment
-MODEL_PATH = "/content/drive/MyDrive/llama2_models/llama-2-7b-chat.Q4_K_M.gguf"  # change on PC
+# ✅ Allow cross-origin requests from any origin
+CORS(app, origins="*", supports_credentials=True)
 
-llm = Llama(model_path=MODEL_PATH, n_ctx=4096)
-whisper_model = whisper.load_model("base")
+llm = Llama(model_path="/content/drive/MyDrive/llama-2-7b-chat.Q4_K_M.gguf", n_ctx=4096)
 
-@app.route("/ask", methods=["POST"])
+@app.route("/ask", methods=["POST", "OPTIONS"])
 def ask():
-    if not request.is_json:
-        return jsonify({"error": "Expected application/json"}), 415
+    # Handle preflight request
+    if request.method == "OPTIONS":
+        return '', 200
+
     data = request.get_json()
     prompt = data.get("prompt", "").strip()
     if not prompt:
         return jsonify({"error": "Empty prompt"}), 400
-    try:
-        output = llm(f"[INST] {prompt} [/INST]", max_tokens=256, stop=["</s>"], echo=False)
-        response_text = output["choices"][0]["text"].strip()
-        return jsonify({"response": response_text})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    output = llm(f"[INST] {prompt} [/INST]", max_tokens=256, stop=["</s>"], echo=False)
+    return jsonify({"response": output["choices"][0]["text"].strip()})
 
-@app.route("/voice", methods=["POST"])
-def voice():
-    if "audio" not in request.files:
-        return jsonify({"error": "No audio file"}), 400
-    audio = request.files["audio"]
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp:
-        audio.save(temp.name)
-        result = whisper_model.transcribe(temp.name)
-        os.remove(temp.name)
-    return jsonify({"transcript": result["text"]})
+# Start ngrok tunnel
+public_url = ngrok.connect("http://172.28.0.12:5000")
+print("🔗 Public Steve AI URL:", public_url)
 
-if __name__ == "__main__":
-    # 🚀 Don't thread; run Flask normally
-    app.run(host="0.0.0.0", port=5000)
+# Run Flask
+app.run(host="0.0.0.0", port=5000)
