@@ -1,46 +1,52 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from llama_cpp import Llama
 from pyngrok import ngrok
-import threading
+import os
 
-# 🧠 Load the LLaMA model
-llm = Llama(
-    model_path="/content/drive/MyDrive/llama/llama-2-7b-chat.Q4_K_M.gguf",
-    n_threads=8,
-    n_batch=256,
-    use_mmap=True,
-    use_mlock=True
-)
+# Simulated LLaMA response (replace with real model logic)
+def llama_respond(prompt):
+    return f"Echo: {prompt}"
 
-# 🚀 Create Flask app
 app = Flask(__name__)
 CORS(app)
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    data = request.get_json()
-    prompt = data.get("prompt", "").strip()
-    memory = data.get("memory_context", "").strip()
-    full_prompt = f"[Memory]\n{memory}\n\n[User]\n{prompt}"
+    try:
+        data = request.get_json(force=True)
+        prompt = data.get("prompt", "")
+        if not prompt.strip():
+            return jsonify({"error": "Prompt is empty"}), 400
+        response_text = llama_respond(prompt)
+        return jsonify({"response": response_text})
+    except Exception as e:
+        return jsonify({"error": "Invalid request", "details": str(e)}), 400
 
-    response = llm.create_chat_completion(
-        messages=[{"role": "user", "content": full_prompt}]
-    )
-    reply = response["choices"][0]["message"]["content"]
-    new_memory = memory + f"\nUser: {prompt}\nAI: {reply}"
+@app.route("/voice", methods=["POST"])
+def voice():
+    try:
+        if 'audio' not in request.files:
+            return jsonify({"error": "No audio file provided"}), 400
 
-    return jsonify({
-        "response": reply,
-        "memory_update": new_memory.strip()[-3000:]
-    })
+        audio_file = request.files['audio']
+        audio_path = "temp_audio.wav"
+        audio_file.save(audio_path)
 
-# 🧵 Run Flask in a background thread
-def run_flask():
-    app.run(host="0.0.0.0", port=5000)
+        # Whisper speech-to-text
+        import whisper
+        model = whisper.load_model("base")
+        result = model.transcribe(audio_path)
+        transcript = result['text']
 
-threading.Thread(target=run_flask).start()
+        os.remove(audio_path)
+        return jsonify({"transcript": transcript})
 
-# 🌐 Start ngrok tunnel
-public_url = ngrok.connect(5000)
-print(f"🌍 Public ngrok URL: {public_url}")
+    except Exception as e:
+        return jsonify({"error": "Voice recognition failed", "details": str(e)}), 500
+
+if __name__ == "__main__":
+    port = 5000
+    public_url = ngrok.connect(port)
+    print(f"🚀 Ngrok tunnel open at: {public_url}")
+    print("🌐 Visit the frontend and use this as the baseURL.")
+    app.run(port=port)
