@@ -184,7 +184,7 @@
       inputField.value = "";
 
       try {
-        const res = await fetch("https://cc18-35-229-177-23.ngrok-free.app", {
+        const res = await fetch("https://cc18-35-229-177-23.ngrok-free.app/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: message })
