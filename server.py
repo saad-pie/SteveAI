@@ -6,7 +6,9 @@ import whisper
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+
+# ✅ Allow all origins and headers
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 # Load models
 llm = Llama(model_path="/content/drive/MyDrive/llama-2-7b-chat.Q4_K_M.gguf", n_ctx=4096)
