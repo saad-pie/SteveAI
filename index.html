@@ -7,19 +7,14 @@
   <script defer src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
-    body {
-      background-color: #0f172a;
-      color: #e2e8f0;
-    }
+    body { background-color: #0f172a; color: #e2e8f0; }
     .jarvis-box {
       background-color: #1e293b;
       border-radius: 1rem;
       padding: 2rem;
       box-shadow: 0 0 30px rgba(0,255,255,0.2);
     }
-    .glow {
-      text-shadow: 0 0 10px #00ffff;
-    }
+    .glow { text-shadow: 0 0 10px #00ffff; }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
@@ -37,7 +32,7 @@
   </div>
 
   <script>
-    const baseURL = "https://d644-103-73-101-50.ngrok-free.app"; // Replace with your ngrok if updated
+    const baseURL = "https://YOUR-NGROK-URL.ngrok-free.app"; // Replace with printed ngrok URL
 
     async function sendPrompt() {
       const prompt = document.getElementById("prompt").value;
@@ -46,10 +41,10 @@
       try {
         const res = await axios.post(`${baseURL}/ask`, { prompt });
         const text = res.data.response;
-        document.getElementById("response").textContent = "Steve: " + text;
+        document.getElementById("response").textContent = text;
         speak(text);
       } catch (err) {
-        document.getElementById("response").textContent = "Error: " + (err.response?.data?.error || err.message);
+        document.getElementById("response").textContent = "Error: " + err.message;
       }
     }
 
@@ -68,34 +63,24 @@
         .then(stream => {
           const mediaRecorder = new MediaRecorder(stream);
           const audioChunks = [];
-
-          mediaRecorder.ondataavailable = e => {
-            audioChunks.push(e.data);
-          };
-
+          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
           mediaRecorder.onstop = async () => {
             const blob = new Blob(audioChunks, { type: 'audio/wav' });
             const formData = new FormData();
             formData.append('audio', blob);
-
-            try {
-              const res = await fetch(`${baseURL}/voice`, {
-                method: 'POST',
-                body: formData
-              });
-              const data = await res.json();
-              document.getElementById("prompt").value = data.transcript || "";
-              sendPrompt();
-            } catch (err) {
-              document.getElementById("response").textContent = "Voice error: " + err.message;
-            }
+            const res = await fetch(`${baseURL}/voice`, {
+              method: 'POST',
+              body: formData
+            });
+            const data = await res.json();
+            document.getElementById("prompt").value = data.transcript;
+            sendPrompt();
           };
-
           mediaRecorder.start();
           setTimeout(() => mediaRecorder.stop(), 5000);
         })
         .catch(err => {
-          document.getElementById("response").textContent = "Microphone error: " + err.message;
+          document.getElementById("response").textContent = "Mic error: " + err.message;
         });
     }
   </script>
