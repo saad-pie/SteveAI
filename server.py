@@ -6,21 +6,29 @@ import os
 import whisper
 from pyngrok import ngrok
 import threading
+import sys
+import importlib
 
-# Patch Colab debugger spam ("Unexpected exception finding object shape")
-try:
+# ✅ Patch Colab spam error more forcefully
+if "google.colab._debugpy_repr" in sys.modules:
     import google.colab._debugpy_repr as _colab_repr
     _colab_repr.get_shape = lambda obj: None
-except:
-    pass
+else:
+    def patch_colab_repr():
+        import google.colab._debugpy_repr as _colab_repr
+        _colab_repr.get_shape = lambda obj: None
+    importlib.import_module("google.colab._debugpy_repr")
+    patch_colab_repr()
 
+# ✅ Init Flask
 app = Flask(__name__)
-CORS(app)  # Allow CORS from any origin
+CORS(app)
 
-# Load models
+# ✅ Load Models
 llm = Llama(model_path="/content/drive/MyDrive/llama-2-7b-chat.Q4_K_M.gguf", n_ctx=4096)
 whisper_model = whisper.load_model("base")
 
+# ✅ Text Generation Route
 @app.route("/ask", methods=["POST"])
 def ask():
     if not request.is_json:
@@ -36,6 +44,7 @@ def ask():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ✅ Whisper Transcription Route
 @app.route("/voice", methods=["POST"])
 def voice():
     if "audio" not in request.files:
@@ -47,11 +56,10 @@ def voice():
         os.remove(temp.name)
     return jsonify({"transcript": result["text"]})
 
-# Start ngrok tunnel
+# ✅ Ngrok tunnel and app run
 public_url = ngrok.connect(5000)
 print("Public ngrok URL:", public_url)
 
-# Start Flask app in a separate thread
 def run_app():
     app.run(host="0.0.0.0", port=5000)
 
