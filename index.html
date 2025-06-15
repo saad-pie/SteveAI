@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Jarvis - Voice & Text Assistant</title>
+  <title>Steve AI - Jarvis Assistant</title>
   <script defer src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
@@ -20,16 +20,13 @@
     .glow {
       text-shadow: 0 0 10px #00ffff;
     }
-    textarea {
-      resize: none;
-    }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
   <div class="jarvis-box w-full max-w-3xl">
-    <h1 class="text-3xl font-bold mb-4 glow text-center">Jarvis - Local AI Assistant</h1>
+    <h1 class="text-3xl font-bold mb-4 glow text-center">Steve AI - Local LLaMA Assistant</h1>
 
-    <textarea id="prompt" rows="3" placeholder="Ask Jarvis anything..." class="w-full p-3 text-black rounded mb-4"></textarea>
+    <textarea id="prompt" rows="3" placeholder="Ask Steve anything..." class="w-full p-3 text-black rounded mb-4"></textarea>
 
     <div class="flex justify-between mb-4">
       <button onclick="sendPrompt()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">💬 Send Text</button>
@@ -40,24 +37,16 @@
   </div>
 
   <script>
-    const SERVER_URL = "http://192.168.0.105:5000/ask"; // Replace with your IP
+    const baseURL = "https://d644-103-73-101-50.ngrok-free.app";
 
     async function sendPrompt() {
-      const prompt = document.getElementById("prompt").value.trim();
-      if (!prompt) return;
-      const memory = localStorage.getItem("jarvis_memory") || "";
-      document.getElementById("response").textContent = "Jarvis is thinking...";
-
+      const prompt = document.getElementById("prompt").value;
+      if (!prompt.trim()) return;
+      document.getElementById("response").textContent = "Steve is thinking...";
       try {
-        const res = await axios.post(SERVER_URL, {
-          prompt,
-          memory_context: memory
-        });
-
+        const res = await axios.post(`${baseURL}/ask`, { prompt });
         const text = res.data.response;
-        const updatedMemory = res.data.memory_update;
-        localStorage.setItem("jarvis_memory", updatedMemory);
-        document.getElementById("response").textContent = "Jarvis: " + text;
+        document.getElementById("response").textContent = "Steve: " + text;
         speak(text);
       } catch (err) {
         document.getElementById("response").textContent = "Error: " + err;
@@ -66,7 +55,7 @@
 
     function speak(text) {
       const msg = new SpeechSynthesisUtterance(text);
-      msg.voice = speechSynthesis.getVoices().find(v => 
+      msg.voice = speechSynthesis.getVoices().find(v =>
         v.name.includes("Zira") || v.name.includes("Jenny") || v.name.includes("Jarvis")
       ) || null;
       msg.rate = 1.1;
@@ -75,32 +64,35 @@
 
     function recordVoice() {
       document.getElementById("response").textContent = "🎙️ Listening...";
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          const mediaRecorder = new MediaRecorder(stream);
+          const audioChunks = [];
 
-      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-        const recorder = new MediaRecorder(stream);
-        const audioChunks = [];
+          mediaRecorder.ondataavailable = e => {
+            audioChunks.push(e.data);
+          };
 
-        recorder.ondataavailable = e => audioChunks.push(e.data);
-        recorder.onstop = async () => {
-          const blob = new Blob(audioChunks, { type: 'audio/wav' });
-          const formData = new FormData();
-          formData.append('audio', blob);
+          mediaRecorder.onstop = async () => {
+            const blob = new Blob(audioChunks, { type: 'audio/wav' });
+            const formData = new FormData();
+            formData.append('audio', blob);
 
-          const res = await fetch('http://192.168.0.105:5000/voice', {
-            method: 'POST',
-            body: formData
-          });
+            const res = await fetch(`${baseURL}/voice`, {
+              method: 'POST',
+              body: formData
+            });
+            const data = await res.json();
+            document.getElementById("prompt").value = data.transcript;
+            sendPrompt();
+          };
 
-          const data = await res.json();
-          document.getElementById("prompt").value = data.transcript;
-          sendPrompt();
-        };
-
-        recorder.start();
-        setTimeout(() => recorder.stop(), 5000);
-      }).catch(err => {
-        document.getElementById("response").textContent = "Microphone error: " + err.message;
-      });
+          mediaRecorder.start();
+          setTimeout(() => mediaRecorder.stop(), 5000);
+        })
+        .catch(err => {
+          document.getElementById("response").textContent = "Microphone error: " + err.message;
+        });
     }
   </script>
 </body>
