@@ -37,7 +37,7 @@
   </div>
 
   <script>
-    const baseURL = "https://b2b8-103-73-101-50.ngrok-free.app"; // ✅ Updated to your live ngrok URL
+    const baseURL = "https://d644-103-73-101-50.ngrok-free.app"; // Replace with your ngrok if updated
 
     async function sendPrompt() {
       const prompt = document.getElementById("prompt").value;
@@ -49,7 +49,7 @@
         document.getElementById("response").textContent = "Steve: " + text;
         speak(text);
       } catch (err) {
-        document.getElementById("response").textContent = "Error: " + err.message;
+        document.getElementById("response").textContent = "Error: " + (err.response?.data?.error || err.message);
       }
     }
 
@@ -78,13 +78,17 @@
             const formData = new FormData();
             formData.append('audio', blob);
 
-            const res = await fetch(`${baseURL}/voice`, {
-              method: 'POST',
-              body: formData
-            });
-            const data = await res.json();
-            document.getElementById("prompt").value = data.transcript;
-            sendPrompt();
+            try {
+              const res = await fetch(`${baseURL}/voice`, {
+                method: 'POST',
+                body: formData
+              });
+              const data = await res.json();
+              document.getElementById("prompt").value = data.transcript || "";
+              sendPrompt();
+            } catch (err) {
+              document.getElementById("response").textContent = "Voice error: " + err.message;
+            }
           };
 
           mediaRecorder.start();
