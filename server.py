@@ -8,20 +8,7 @@ import tempfile
 import os
 import whisper
 import threading
-import sys
-import importlib
 from werkzeug.local import LocalProxy
-
-# ✅ Patch Colab spam error more forcefully
-if "google.colab._debugpy_repr" in sys.modules:
-    import google.colab._debugpy_repr as _colab_repr
-    _colab_repr.get_shape = lambda obj: None
-else:
-    def patch_colab_repr():
-        import google.colab._debugpy_repr as _colab_repr
-        _colab_repr.get_shape = lambda obj: None
-    importlib.import_module("google.colab._debugpy_repr")
-    patch_colab_repr()
 
 # 🔧 Prevent RuntimeError from werkzeug LocalProxy .shape inspection
 def safe_shape(self):
