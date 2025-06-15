@@ -1,23 +1,23 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from llama_cpp import Llama
 import tempfile
 import os
 import whisper
-from flask_cors import CORS
 from pyngrok import ngrok
 import threading
 
-# Patch Colab's shape-checking to stop crashing on Flask objects
+# Patch Colab debugger spam ("Unexpected exception finding object shape")
 try:
-    import google.colab._debugpy_repr
-    google.colab._debugpy_repr.get_shape = lambda obj: None
-except ImportError:
+    import google.colab._debugpy_repr as _colab_repr
+    _colab_repr.get_shape = lambda obj: None
+except:
     pass
 
 app = Flask(__name__)
-CORS(app)  # Allow all origins
+CORS(app)  # Allow CORS from any origin
 
-# ✅ Load models
+# Load models
 llm = Llama(model_path="/content/drive/MyDrive/llama-2-7b-chat.Q4_K_M.gguf", n_ctx=4096)
 whisper_model = whisper.load_model("base")
 
