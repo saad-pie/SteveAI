@@ -8,6 +8,8 @@ from pyngrok import ngrok
 import threading
 import sys
 import importlib
+import types
+from werkzeug.local import LocalProxy
 
 # ✅ Patch Colab spam error more forcefully
 if "google.colab._debugpy_repr" in sys.modules:
@@ -19,6 +21,17 @@ else:
         _colab_repr.get_shape = lambda obj: None
     importlib.import_module("google.colab._debugpy_repr")
     patch_colab_repr()
+
+# 🔧 Prevent RuntimeError from werkzeug LocalProxy .shape inspection
+def safe_shape(self):
+    try:
+        obj = object.__getattribute__(self, '_get_current_object')()
+        return getattr(obj, 'shape', None)
+    except RuntimeError:
+        return None
+
+if not isinstance(LocalProxy.shape, property):
+    LocalProxy.shape = property(safe_shape)
 
 # ✅ Init Flask
 app = Flask(__name__)
