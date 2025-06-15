@@ -1,3 +1,6 @@
+import logging
+logging.getLogger("root").setLevel(logging.CRITICAL)
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from llama_cpp import Llama
@@ -8,7 +11,6 @@ from pyngrok import ngrok
 import threading
 import sys
 import importlib
-import types
 from werkzeug.local import LocalProxy
 
 # ✅ Patch Colab spam error more forcefully
@@ -30,8 +32,9 @@ def safe_shape(self):
     except RuntimeError:
         return None
 
-if not isinstance(LocalProxy.shape, property):
-    LocalProxy.shape = property(safe_shape)
+# Only patch if 'shape' hasn't already been defined
+if not hasattr(LocalProxy, 'shape'):
+    setattr(LocalProxy, 'shape', property(safe_shape))
 
 # ✅ Init Flask
 app = Flask(__name__)
