@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Steve AI - Jarvis Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Steve AI - Local LLaMA Assistant</title>
   <script defer src="https://unpkg.com/axios/dist/axios.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
@@ -49,14 +49,14 @@
         document.getElementById("response").textContent = "Steve: " + text;
         speak(text);
       } catch (err) {
-        document.getElementById("response").textContent = "Error: " + err;
+        document.getElementById("response").textContent = "Error: " + err.message;
       }
     }
 
     function speak(text) {
       const msg = new SpeechSynthesisUtterance(text);
       msg.voice = speechSynthesis.getVoices().find(v =>
-        v.name.includes("Zira") || v.name.includes("Jenny") || v.name.includes("Jarvis")
+        v.name.includes("Zira") || v.name.includes("Jenny") || v.name.includes("Steve")
       ) || null;
       msg.rate = 1.1;
       speechSynthesis.speak(msg);
