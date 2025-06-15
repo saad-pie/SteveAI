@@ -1,26 +1,18 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from llama_cpp import Llama
 import tempfile
 import os
 import whisper
-from flask_cors import CORS
+from pyngrok import ngrok
 
+# Initialize Flask app
 app = Flask(__name__)
+CORS(app)
 
-# ✅ Allow all origins and headers
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
-
-# Load models
+# ✅ Load models
 llm = Llama(model_path="/content/drive/MyDrive/llama-2-7b-chat.Q4_K_M.gguf", n_ctx=4096)
-
 whisper_model = whisper.load_model("base")
-
-@app.after_request
-def after_request(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
-    response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
-    return response
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -49,4 +41,9 @@ def voice():
     return jsonify({"transcript": result["text"]})
 
 if __name__ == "__main__":
+    # ✅ Create ngrok tunnel
+    public_url = ngrok.connect(5000)
+    print("Public ngrok URL:", public_url)
+
+    # ✅ Run Flask app
     app.run(host="0.0.0.0", port=5000)
