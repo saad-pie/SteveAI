@@ -8,7 +8,8 @@ import whisper
 app = Flask(__name__)
 
 # ✅ Apply CORS to the app globally (FOR ANY PATH)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True, send_wildcard=True)
+CORS(app, resources={r"/*": {"origins": "https://saad-pie.github.io"}}, supports_credentials=True)
+
 
 
 # Load LLaMA
