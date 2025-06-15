@@ -1,17 +1,18 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from llama_cpp import Llama
-import os
 import tempfile
+import os
 import whisper
 
 app = Flask(__name__)
-CORS(app)
 
-# Load LLaMA model
+# ✅ Apply CORS to the app globally (FOR ANY PATH)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True, send_wildcard=True)
+
+
+# Load LLaMA
 llm = Llama(model_path="./models/llama-2.gguf", n_ctx=4096)
-
-# Load Whisper model (for voice input)
 whisper_model = whisper.load_model("base")
 
 @app.route("/ask", methods=["POST"])
@@ -42,4 +43,5 @@ def voice():
     return jsonify({"transcript": result["text"]})
 
 if __name__ == "__main__":
+    # Important: enable external access for ngrok
     app.run(host="0.0.0.0", port=5000)
