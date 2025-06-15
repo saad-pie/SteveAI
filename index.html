@@ -27,6 +27,94 @@
   </div>
 
   <script>
+    // ✅ Updated ngrok URL
+    const baseURL = "https://9a80-103-73-101-50.ngrok-free.app";
+
+    async function sendPrompt() {
+      const prompt = document.getElementById("prompt").value.trim();
+      if (!prompt) return;
+
+      document.getElementById("response").textContent = "Steve is thinking...";
+      try {
+        const res = await axios.post(`${baseURL}/ask`, { prompt });
+        const text = res.data.response;
+        document.getElementById("response").textContent = "Steve: " + text;
+        speak(text);
+      } catch (err) {
+        document.getElementById("response").textContent = "Error: " + (err.response?.data?.error || err.message);
+      }
+    }
+
+    function speak(text) {
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.voice = speechSynthesis.getVoices().find(v =>
+        v.name.includes("Zira") || v.name.includes("Jenny") || v.name.includes("Steve")
+      ) || null;
+      msg.rate = 1.1;
+      speechSynthesis.speak(msg);
+    }
+
+    function recordVoice() {
+      document.getElementById("response").textContent = "🎙️ Listening...";
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        const mediaRecorder = new MediaRecorder(stream);
+        const audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(audioChunks, { type: 'audio/wav' });
+          const formData = new FormData();
+          formData.append('audio', blob);
+
+          try {
+            const res = await fetch(`${baseURL}/voice`, { method: 'POST', body: formData });
+            const data = await res.json();
+            document.getElementById("prompt").value = data.transcript;
+            sendPrompt();
+          } catch (err) {
+            document.getElementById("response").textContent = "Voice error: " + err.message;
+          }
+        };
+
+        mediaRecorder.start();
+        setTimeout(() => mediaRecorder.stop(), 5000);
+      }).catch(err => {
+        document.getElementById("response").textContent = "Microphone error: " + err.message;
+      });
+    }
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Steve AI - Local LLaMA Assistant</title>
+  <script defer src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #0f172a; color: #e2e8f0; }
+    .jarvis-box {
+      background-color: #1e293b; border-radius: 1rem; padding: 2rem;
+      box-shadow: 0 0 30px rgba(0,255,255,0.2);
+    }
+    .glow { text-shadow: 0 0 10px #00ffff; }
+  </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen">
+  <div class="jarvis-box w-full max-w-3xl">
+    <h1 class="text-3xl font-bold mb-4 glow text-center">Steve AI - Local LLaMA Assistant</h1>
+    <textarea id="prompt" rows="3" placeholder="Ask Steve anything..." class="w-full p-3 text-black rounded mb-4"></textarea>
+    <div class="flex justify-between mb-4">
+      <button onclick="sendPrompt()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">💬 Send Text</button>
+      <button onclick="recordVoice()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white">🎙️ Voice Input</button>
+    </div>
+    <pre id="response" class="whitespace-pre-wrap text-lg"></pre>
+  </div>
+
+  <script>
     const baseURL = "https://d644-103-73-101-50.ngrok-free.app";  // your ngrok URL
 
     async function sendPrompt() {
