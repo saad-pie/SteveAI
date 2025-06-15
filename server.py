@@ -4,12 +4,21 @@ import tempfile
 import os
 import whisper
 from flask_cors import CORS
-app = Flask(__name__)
-CORS(app)  # <-- Allow all origins
 
-# ✅ Load models
-llm = Llama(model_path="./models/llama-2.gguf", n_ctx=4096)
+app = Flask(__name__)
+CORS(app)
+
+# Load models
+llm = Llama(model_path="/content/drive/MyDrive/llama-2-7b-chat.Q4_K_M.gguf", n_ctx=4096)
+
 whisper_model = whisper.load_model("base")
+
+@app.after_request
+def after_request(response):
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+    response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+    return response
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -38,5 +47,4 @@ def voice():
     return jsonify({"transcript": result["text"]})
 
 if __name__ == "__main__":
-    # ✅ Listen on all interfaces (for ngrok)
     app.run(host="0.0.0.0", port=5000)
