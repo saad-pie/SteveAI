@@ -1,14 +1,21 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
 from llama_cpp import Llama
 import tempfile
 import os
 import whisper
+from flask_cors import CORS
 from pyngrok import ngrok
+import threading
 
-# Initialize Flask app
+# Patch Colab's shape-checking to stop crashing on Flask objects
+try:
+    import google.colab._debugpy_repr
+    google.colab._debugpy_repr.get_shape = lambda obj: None
+except ImportError:
+    pass
+
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Allow all origins
 
 # ✅ Load models
 llm = Llama(model_path="/content/drive/MyDrive/llama-2-7b-chat.Q4_K_M.gguf", n_ctx=4096)
@@ -40,10 +47,12 @@ def voice():
         os.remove(temp.name)
     return jsonify({"transcript": result["text"]})
 
-if __name__ == "__main__":
-    # ✅ Create ngrok tunnel
-    public_url = ngrok.connect(5000)
-    print("Public ngrok URL:", public_url)
+# Start ngrok tunnel
+public_url = ngrok.connect(5000)
+print("Public ngrok URL:", public_url)
 
-    # ✅ Run Flask app
+# Start Flask app in a separate thread
+def run_app():
     app.run(host="0.0.0.0", port=5000)
+
+threading.Thread(target=run_app).start()
