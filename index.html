@@ -9,9 +9,7 @@
   <style>
     body { background-color: #0f172a; color: #e2e8f0; }
     .jarvis-box {
-      background-color: #1e293b;
-      border-radius: 1rem;
-      padding: 2rem;
+      background-color: #1e293b; border-radius: 1rem; padding: 2rem;
       box-shadow: 0 0 30px rgba(0,255,255,0.2);
     }
     .glow { text-shadow: 0 0 10px #00ffff; }
@@ -20,31 +18,29 @@
 <body class="flex flex-col items-center justify-center min-h-screen">
   <div class="jarvis-box w-full max-w-3xl">
     <h1 class="text-3xl font-bold mb-4 glow text-center">Steve AI - Local LLaMA Assistant</h1>
-
     <textarea id="prompt" rows="3" placeholder="Ask Steve anything..." class="w-full p-3 text-black rounded mb-4"></textarea>
-
     <div class="flex justify-between mb-4">
       <button onclick="sendPrompt()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">💬 Send Text</button>
       <button onclick="recordVoice()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-white">🎙️ Voice Input</button>
     </div>
-
     <pre id="response" class="whitespace-pre-wrap text-lg"></pre>
   </div>
 
   <script>
-    const baseURL = "https://YOUR-NGROK-URL.ngrok-free.app"; // Replace with printed ngrok URL
+    const baseURL = "https://d644-103-73-101-50.ngrok-free.app";  // your ngrok URL
 
     async function sendPrompt() {
-      const prompt = document.getElementById("prompt").value;
-      if (!prompt.trim()) return;
+      const prompt = document.getElementById("prompt").value.trim();
+      if (!prompt) return;
+
       document.getElementById("response").textContent = "Steve is thinking...";
       try {
         const res = await axios.post(`${baseURL}/ask`, { prompt });
         const text = res.data.response;
-        document.getElementById("response").textContent = text;
+        document.getElementById("response").textContent = "Steve: " + text;
         speak(text);
       } catch (err) {
-        document.getElementById("response").textContent = "Error: " + err.message;
+        document.getElementById("response").textContent = "Error: " + err.response?.data?.error || err.message;
       }
     }
 
@@ -59,29 +55,32 @@
 
     function recordVoice() {
       document.getElementById("response").textContent = "🎙️ Listening...";
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
-          const mediaRecorder = new MediaRecorder(stream);
-          const audioChunks = [];
-          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-          mediaRecorder.onstop = async () => {
-            const blob = new Blob(audioChunks, { type: 'audio/wav' });
-            const formData = new FormData();
-            formData.append('audio', blob);
-            const res = await fetch(`${baseURL}/voice`, {
-              method: 'POST',
-              body: formData
-            });
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+        const mediaRecorder = new MediaRecorder(stream);
+        const audioChunks = [];
+
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+
+        mediaRecorder.onstop = async () => {
+          const blob = new Blob(audioChunks, { type: 'audio/wav' });
+          const formData = new FormData();
+          formData.append('audio', blob);
+
+          try {
+            const res = await fetch(`${baseURL}/voice`, { method: 'POST', body: formData });
             const data = await res.json();
             document.getElementById("prompt").value = data.transcript;
             sendPrompt();
-          };
-          mediaRecorder.start();
-          setTimeout(() => mediaRecorder.stop(), 5000);
-        })
-        .catch(err => {
-          document.getElementById("response").textContent = "Mic error: " + err.message;
-        });
+          } catch (err) {
+            document.getElementById("response").textContent = "Voice error: " + err.message;
+          }
+        };
+
+        mediaRecorder.start();
+        setTimeout(() => mediaRecorder.stop(), 5000);
+      }).catch(err => {
+        document.getElementById("response").textContent = "Microphone error: " + err.message;
+      });
     }
   </script>
 </body>
