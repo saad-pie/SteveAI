@@ -1,20 +1,19 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from llama_cpp import Llama
+import whisper
 import tempfile
 import os
-import whisper
-import threading
 
-# ✅ Init Flask
 app = Flask(__name__)
 CORS(app)
 
-# ✅ Load Models
-llm = Llama(model_path="D:/path/to/llama-2-7b-chat.Q4_K_M.gguf", n_ctx=4096)
+# ✅ Use proper absolute path depending on environment
+MODEL_PATH = "/content/drive/MyDrive/llama2_models/llama-2-7b-chat.Q4_K_M.gguf"  # change on PC
+
+llm = Llama(model_path=MODEL_PATH, n_ctx=4096)
 whisper_model = whisper.load_model("base")
 
-# ✅ Text Generation
 @app.route("/ask", methods=["POST"])
 def ask():
     if not request.is_json:
@@ -30,7 +29,6 @@ def ask():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Voice Transcription
 @app.route("/voice", methods=["POST"])
 def voice():
     if "audio" not in request.files:
@@ -42,8 +40,6 @@ def voice():
         os.remove(temp.name)
     return jsonify({"transcript": result["text"]})
 
-# ✅ Start server (do not use ngrok here)
-def run_app():
+if __name__ == "__main__":
+    # 🚀 Don't thread; run Flask normally
     app.run(host="0.0.0.0", port=5000)
-
-threading.Thread(target=run_app).start()
