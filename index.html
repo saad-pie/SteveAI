@@ -187,7 +187,7 @@
         const res = await fetch("https://2bb6-103-73-101-50.ngrok-free.app/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message })
+          body: JSON.stringify({ prompt: message })
         });
         const data = await res.json();
         if (data.response) {
