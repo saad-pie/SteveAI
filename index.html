@@ -38,6 +38,7 @@
 
     .message {
       margin: 10px 0;
+      white-space: pre-wrap;
     }
 
     .user {
@@ -92,35 +93,73 @@
 
   <script>
     const chatBox = document.getElementById("chat-box");
+    const inputField = document.getElementById("message");
+    const storageKey = "chat-history";
+    let messages = JSON.parse(localStorage.getItem(storageKey) || "[]");
 
-    function addMessage(message, sender) {
+    // Load saved messages
+    messages.forEach(msg => addMessage(msg.text, msg.sender, false));
+
+    // Focus input on load
+    window.onload = () => inputField.focus();
+
+    // Enter key to send
+    inputField.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    function addMessage(message, sender, save = true) {
       const msgDiv = document.createElement("div");
+      const now = new Date();
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       msgDiv.className = "message " + sender;
-      msgDiv.innerText = message;
+      msgDiv.innerText = `[${time}] ${message}`;
       chatBox.appendChild(msgDiv);
       chatBox.scrollTop = chatBox.scrollHeight;
+
+      if (save) {
+        messages.push({ text: `[${time}] ${message}`, sender });
+        localStorage.setItem(storageKey, JSON.stringify(messages));
+      }
+    }
+
+    async function simulateTyping(text, delay = 20) {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "message bot";
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      const now = new Date();
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      msgDiv.innerText = `[${time}] Steve: `;
+      for (let i = 0; i < text.length; i++) {
+        msgDiv.innerText += text[i];
+        await new Promise(resolve => setTimeout(resolve, delay));
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      messages.push({ text: msgDiv.innerText, sender: "bot" });
+      localStorage.setItem(storageKey, JSON.stringify(messages));
     }
 
     async function sendMessage() {
-      const input = document.getElementById("message");
-      const message = input.value.trim();
+      const message = inputField.value.trim();
       if (!message) return;
 
       addMessage("You: " + message, "user");
-      input.value = "";
+      inputField.value = "";
 
       try {
         const response = await fetch("https://2bb6-103-73-101-50.ngrok-free.app/chat", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message })
         });
 
         if (!response.ok) throw new Error("HTTP error " + response.status);
         const data = await response.json();
-        addMessage("Steve: " + data.response, "bot");
+        await simulateTyping(data.response);
       } catch (error) {
         addMessage("Error: " + error.message, "bot");
       }
