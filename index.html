@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Steve AI</title>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -14,12 +13,6 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex;
       height: 100vh;
-      transition: background 0.4s ease, color 0.4s ease;
-    }
-
-    .light-theme {
-      background: #f0f0f0;
-      color: #111;
     }
 
     #sidebar {
@@ -54,7 +47,7 @@
     }
 
     h1 {
-      margin: 0 0 10px 0;
+      margin: 0 0 20px 0;
       font-size: 2rem;
       color: #00ffe1;
     }
@@ -91,16 +84,6 @@
       color: #00ffaa;
     }
 
-    .light-theme .user {
-      background: #cce6ff;
-      color: #003355;
-    }
-
-    .light-theme .bot {
-      background: #d9fbe4;
-      color: #004d40;
-    }
-
     #input-area {
       display: flex;
       margin-top: 20px;
@@ -114,11 +97,6 @@
       outline: none;
       background: #111;
       color: #00ffee;
-    }
-
-    .light-theme input {
-      background: #ddd;
-      color: #111;
     }
 
     button {
@@ -135,27 +113,10 @@
     button:hover {
       background: #00e6cc;
     }
-
-    #theme-toggle {
-      margin-bottom: 10px;
-      width: 100%;
-      padding: 10px;
-      background: #00ffee22;
-      color: #00ffee;
-      border: 1px solid #00ffee44;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    .light-theme #theme-toggle {
-      background: #eee;
-      color: #333;
-    }
   </style>
 </head>
 <body>
   <div id="sidebar">
-    <button id="theme-toggle" onclick="toggleTheme()">🌙 Toggle Theme</button>
     <h2>Previous Chats</h2>
     <div id="chat-history"></div>
   </div>
@@ -178,14 +139,10 @@
     let session = [];
     let allChats = JSON.parse(localStorage.getItem(historyKey) || "[]");
 
-    function addBubble(text, sender, save = true, isMarkdown = false) {
+    function addBubble(text, sender, save = true) {
       const bubble = document.createElement("div");
       bubble.className = `bubble ${sender}`;
-      if (isMarkdown) {
-        bubble.innerHTML = `<strong>${sender === 'bot' ? 'Steve' : 'You'}:</strong><br>` + marked.parse(text);
-      } else {
-        bubble.innerHTML = `<strong>${sender === 'bot' ? 'Steve' : 'You'}:</strong> ${text}`;
-      }
+      bubble.innerText = text;
       chatBox.appendChild(bubble);
       chatBox.scrollTop = chatBox.scrollHeight;
 
@@ -217,36 +174,28 @@
     function loadSession(index) {
       chatBox.innerHTML = "";
       const selected = allChats[index];
-      selected.forEach(msg => addBubble(msg.text, msg.sender, false, true));
+      selected.forEach(msg => addBubble(msg.text, msg.sender, false));
     }
 
     async function sendMessage() {
       const message = inputField.value.trim();
       if (!message) return;
-      addBubble(message, "user");
+      addBubble("You: " + message, "user");
       inputField.value = "";
 
-      const loadingBubble = document.createElement("div");
-      loadingBubble.className = "bubble bot";
-      loadingBubble.innerText = "Steve is typing...";
-      chatBox.appendChild(loadingBubble);
-      chatBox.scrollTop = chatBox.scrollHeight;
-
       try {
-        const res = await fetch("https://cc18-35-229-177-23.ngrok-free.app/ask", {
+        const res = await fetch("https://4608-35-229-177-23.ngrok-free.app", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: message })
         });
         const data = await res.json();
-        chatBox.removeChild(loadingBubble);
         if (data.response) {
-          await simulateTyping(data.response);
+          await simulateTyping("Steve: " + data.response);
         } else {
           addBubble("Error: Invalid response", "bot");
         }
       } catch (err) {
-        chatBox.removeChild(loadingBubble);
         addBubble("Error: " + err.message, "bot");
       }
     }
@@ -257,21 +206,20 @@
       chatBox.appendChild(bubble);
       chatBox.scrollTop = chatBox.scrollHeight;
 
-      let typed = "";
       for (let i = 0; i < text.length; i++) {
-        typed += text[i];
-        bubble.innerHTML = `<strong>Steve:</strong><br>` + marked.parseInline(typed);
+        bubble.innerText += text[i];
         await new Promise(r => setTimeout(r, delay));
         chatBox.scrollTop = chatBox.scrollHeight;
       }
       session.push({ text, sender: "bot" });
     }
 
-    function toggleTheme() {
-      document.body.classList.toggle("light-theme");
-    }
-
+    // Initialize
     updateHistoryPanel();
     inputField.focus();
     inputField.addEventListener("keypress", e => {
-      if (e.key === "Ente
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>
