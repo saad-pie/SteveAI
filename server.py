@@ -4,7 +4,7 @@ from llama_cpp import Llama
 
 # Load LLaMA 2 model (update path if using in Colab)
 llm = Llama(
-    model_path="C:/Users/saad/llama2_models/llama-2-7b-chat.Q4_K_M.gguf",
+    model_path="/content/drive/MyDrive/llama-2-7b-chat.Q4_K_M.gguf",
     n_threads=8,
     n_batch=256,
     use_mmap=True,
