@@ -4,68 +4,126 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Steve AI</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <style>
     body {
-      background: radial-gradient(circle at top left, #0f172a, #1e293b);
-      color: #e2e8f0;
-      font-family: 'Segoe UI', sans-serif;
+      background: #0d0d0d;
+      color: #00ffee;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      margin: 0;
+      padding: 20px;
     }
-    .chat-box {
-      max-height: 70vh;
+
+    h1 {
+      margin-bottom: 10px;
+      font-size: 2rem;
+      color: #00ffe1;
+    }
+
+    #chat-box {
+      width: 100%;
+      max-width: 700px;
+      height: 70vh;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid #00ffee88;
+      border-radius: 12px;
       overflow-y: auto;
+      padding: 20px;
+      margin-bottom: 20px;
     }
-    .bubble {
-      background: #334155;
-      border-radius: 20px;
-      padding: 10px 15px;
-      margin: 5px 0;
+
+    .message {
+      margin: 10px 0;
     }
+
     .user {
-      background: #2563eb;
-      margin-left: auto;
+      text-align: right;
+      color: #99ccff;
     }
+
     .bot {
-      background: #475569;
-      margin-right: auto;
+      text-align: left;
+      color: #00ffaa;
+    }
+
+    #input-area {
+      display: flex;
+      width: 100%;
+      max-width: 700px;
+    }
+
+    input {
+      flex: 1;
+      padding: 12px;
+      border-radius: 8px 0 0 8px;
+      border: none;
+      outline: none;
+      background: #111;
+      color: #00ffee;
+    }
+
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 0 8px 8px 0;
+      background: #00ffee;
+      color: #000;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #00e6cc;
     }
   </style>
 </head>
-<body class="p-4">
-  <h1 class="text-3xl font-bold mb-4 text-center">Steve AI</h1>
-  <div class="chat-box bg-gray-800 p-4 rounded-xl shadow-lg mb-4" id="chat-box">
-    <!-- Chat messages appear here -->
-  </div>
-  <div class="flex space-x-2">
-    <input id="user-input" type="text" placeholder="Type your message..." class="flex-1 p-2 rounded-xl text-black" />
-    <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl text-white">Send</button>
+<body>
+  <h1>Steve AI Assistant</h1>
+  <div id="chat-box"></div>
+  <div id="input-area">
+    <input type="text" id="message" placeholder="Ask Steve anything..." />
+    <button onclick="sendMessage()">Send</button>
   </div>
 
   <script>
+    const chatBox = document.getElementById("chat-box");
+
+    function addMessage(message, sender) {
+      const msgDiv = document.createElement("div");
+      msgDiv.className = "message " + sender;
+      msgDiv.innerText = message;
+      chatBox.appendChild(msgDiv);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
     async function sendMessage() {
-      const input = document.getElementById("user-input");
+      const input = document.getElementById("message");
       const message = input.value.trim();
       if (!message) return;
 
-      addMessage(message, 'user');
-      input.value = '';
+      addMessage("You: " + message, "user");
+      input.value = "";
 
-      const response = await fetch("/chat", {
-        method: "POST",
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ message })
-      });
-      const data = await response.json();
-      addMessage(data.response, 'bot');
-    }
+      try {
+        const response = await fetch("https://2bb6-103-73-101-50.ngrok-free.app/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ message })
+        });
 
-    function addMessage(text, sender) {
-      const chat = document.getElementById("chat-box");
-      const msg = document.createElement("div");
-      msg.className = `bubble ${sender}`;
-      msg.innerText = text;
-      chat.appendChild(msg);
-      chat.scrollTop = chat.scrollHeight;
+        if (!response.ok) throw new Error("HTTP error " + response.status);
+        const data = await response.json();
+        addMessage("Steve: " + data.response, "bot");
+      } catch (error) {
+        addMessage("Error: " + error.message, "bot");
+      }
     }
   </script>
 </body>
