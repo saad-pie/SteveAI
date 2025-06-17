@@ -18,11 +18,24 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
+    .message {
+      max-width: 75%;
+      padding: 0.75rem 1rem;
+      border-radius: 1rem;
+      margin: 0.5rem;
+      word-wrap: break-word;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    .bot { background-color: #2d2d2d; color: white; align-self: flex-start; }
+    .user { background-color: #f97316; color: white; align-self: flex-end; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
-<body class="text-white bg-[#111] dark:bg-white dark:text-black min-h-screen flex flex-col items-center justify-center p-4">
+<body class="text-white bg-[#111] dark:bg-white dark:text-black min-h-screen flex flex-col items-center p-4">
 
-  <!-- Top Controls -->
   <div class="absolute top-4 right-4 flex items-center gap-4">
     <div class="flex items-center gap-2 text-sm">
       <div id="status-indicator" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></div>
@@ -31,68 +44,97 @@
     <button onclick="toggleTheme()" class="bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600">Toggle Theme</button>
   </div>
 
-  <!-- Main Content -->
-  <div class="w-full max-w-3xl text-center">
-    <h1 class="text-5xl font-bold mb-2 tracking-wide">STEVE AI</h1>
-    <div class="text-4xl mb-6">🤖</div>
-    <h2 class="text-2xl font-semibold mb-8">THE FUTURE OF ASSISTANTS</h2>
+  <div class="w-full max-w-3xl">
+    <h1 class="text-5xl font-bold mb-4 text-center tracking-wide">STEVE AI</h1>
+    <div id="chatbox" class="flex flex-col gap-2 p-4 h-[60vh] overflow-y-auto border border-gray-700 dark:border-gray-300 rounded-xl mb-4 bg-[#1a1a1a] dark:bg-gray-100"></div>
 
-    <div class="bg-[#222] dark:bg-gray-200 text-white dark:text-black p-6 rounded-xl shadow-xl max-w-2xl mx-auto">
-      <div class="flex items-center gap-2 mb-4">
-        <input id="chat-input" type="text" placeholder="Ask something..." class="w-full p-3 rounded-lg bg-[#111] dark:bg-white border border-gray-700 dark:border-gray-300 text-white dark:text-black focus:outline-none focus:ring-2 focus:ring-orange-500" />
-        <button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">🎤</button>
-      </div>
-      <div id="suggestions" class="flex flex-wrap justify-center gap-2 text-sm text-gray-300 dark:text-gray-700">
-        <span class="bg-gray-800 dark:bg-gray-300 px-3 py-1 rounded-full">Summarize text</span>
-        <span class="bg-gray-800 dark:bg-gray-300 px-3 py-1 rounded-full">Get advice</span>
-        <span class="bg-gray-800 dark:bg-gray-300 px-3 py-1 rounded-full">Analyze data</span>
-        <span class="bg-gray-800 dark:bg-gray-300 px-3 py-1 rounded-full">Code</span>
-        <span class="bg-gray-800 dark:bg-gray-300 px-3 py-1 rounded-full">Help me write</span>
-      </div>
+    <div class="flex items-center gap-2">
+      <input id="chat-input" type="text" placeholder="Ask something..." class="w-full p-3 rounded-lg bg-[#111] dark:bg-white border border-gray-700 dark:border-gray-300 text-white dark:text-black focus:outline-none focus:ring-2 focus:ring-orange-500" />
+      <button onclick="sendMessage()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">Send</button>
+      <button onclick="resendMessage()" class="bg-gray-700 hover:bg-gray-800 text-white px-3 py-2 rounded-lg">↻</button>
     </div>
-
-    <p class="text-xs text-gray-500 dark:text-gray-700 mt-6">
-      By using this app you agree to the <a href="#" class="underline">Terms</a> and <a href="#" class="underline">Privacy Policy</a>.
-    </p>
   </div>
 
-  <!-- JS -->
   <script>
+    let lastPrompt = '';
+
+    async function speak(text) {
+      const synth = window.speechSynthesis;
+      const utter = new SpeechSynthesisUtterance(text);
+      synth.speak(utter);
+    }
+
     function toggleTheme() {
       const root = document.documentElement;
       const isDark = root.classList.contains('dark');
-      if (isDark) {
-        root.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      } else {
-        root.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      }
+      root.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
     }
 
-    // Apply saved theme
     if (localStorage.getItem('theme') === 'light') {
       document.documentElement.classList.remove('dark');
     }
 
-    // Server status check
     async function checkServer() {
       try {
         const res = await fetch('/ask', { method: 'HEAD' });
-        if (res.ok) {
-          document.getElementById('status-indicator').classList.replace('bg-gray-400', 'bg-green-500');
-          document.getElementById('status-text').textContent = 'Online';
-        } else {
-          throw new Error('Server error');
-        }
-      } catch (e) {
+        document.getElementById('status-indicator').classList.replace('bg-gray-400', 'bg-green-500');
+        document.getElementById('status-text').textContent = 'Online';
+      } catch {
         document.getElementById('status-indicator').classList.replace('bg-gray-400', 'bg-red-500');
         document.getElementById('status-text').textContent = 'Offline';
       }
     }
-
     checkServer();
-  </script>
 
+    async function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const prompt = input.value.trim();
+      if (!prompt) return;
+      input.value = '';
+      lastPrompt = prompt;
+
+      appendMessage(prompt, 'user');
+      appendMessage('Typing <span class="cursor">|</span>', 'bot', true);
+
+      try {
+        const res = await fetch('/ask', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt })
+        });
+        const data = await res.json();
+        updateLastBotMessage(data.response);
+        speak(data.response);
+      } catch (e) {
+        updateLastBotMessage('Error connecting to server.');
+      }
+    }
+
+    function resendMessage() {
+      if (lastPrompt) {
+        document.getElementById('chat-input').value = lastPrompt;
+        sendMessage();
+      }
+    }
+
+    function appendMessage(text, role, typing = false) {
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.innerHTML = text;
+      const box = document.getElementById('chatbox');
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function updateLastBotMessage(newText) {
+      const box = document.getElementById('chatbox');
+      const botMsgs = [...box.getElementsByClassName('bot')];
+      if (botMsgs.length > 0) {
+        botMsgs[botMsgs.length - 1].innerHTML = newText;
+        box.scrollTop = box.scrollHeight;
+      }
+    }
+  </script>
 </body>
 </html>
