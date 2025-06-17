@@ -43,7 +43,6 @@
     </style>
   </head>
   <body class="bg-dark text-white min-h-screen flex flex-col">
-    <!-- Header -->
     <div class="flex justify-between items-center px-4 py-2 border-b border-gray-700">
       <h1 class="text-3xl font-bold">Steve AI</h1>
       <div class="flex gap-4 items-center">
@@ -52,10 +51,8 @@
       </div>
     </div>
 
-    <!-- Chat Box -->
     <div id="chatBox" class="flex-1 overflow-y-auto px-4 py-6 space-y-4 flex flex-col"></div>
 
-    <!-- Input -->
     <div class="w-full max-w-3xl mx-auto px-4 py-3">
       <div class="flex items-end gap-2">
         <textarea id="inputBox" rows="1" placeholder="Ask anything..."
@@ -65,8 +62,6 @@
     </div>
 
     <script>
-      const API_URL = "{{API_URL}}"; // dynamically updated by backend
-
       const chatBox = document.getElementById('chatBox');
       const inputBox = document.getElementById('inputBox');
       const sendBtn = document.getElementById('sendBtn');
@@ -121,7 +116,7 @@
         const systemPrompt = `You are Steve, an intelligent and friendly AI created by Saadpie using LLaMA 2. Respond casually and clearly. Only reveal your identity if directly asked.\n\nUser: ${prompt}`;
 
         try {
-          const res = await fetch(`${API_URL}/ask`, {
+          const res = await fetch('https://2bb6-103-73-101-50.ngrok-free.app/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: systemPrompt })
