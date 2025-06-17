@@ -1,108 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Steve AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STEVE AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
     body {
       font-family: 'Patrick Hand', cursive;
     }
+    .cursor {
+      display: inline-block;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
   </style>
 </head>
-<body class="bg-[#1a1a1a] text-white min-h-screen flex flex-col">
+<body class="text-white bg-[#111] dark:bg-white dark:text-black min-h-screen flex flex-col items-center justify-center p-4">
 
-  <!-- Header -->
-  <header class="text-center py-4 border-b border-orange-400">
-    <h1 class="text-4xl md:text-5xl font-bold text-orange-400">STEVE AI</h1>
-    <p class="text-md text-gray-300 mt-1">YOUR PERSONAL AI COMPANION</p>
-  </header>
+  <!-- Top Controls -->
+  <div class="absolute top-4 right-4 flex items-center gap-4">
+    <div class="flex items-center gap-2 text-sm">
+      <div id="status-indicator" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></div>
+      <span id="status-text">Checking...</span>
+    </div>
+    <button onclick="toggleTheme()" class="bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600">Toggle Theme</button>
+  </div>
 
-  <!-- Chat Section -->
-  <main class="flex-1 p-4 flex flex-col overflow-hidden">
-    <!-- Chat box -->
-    <div id="chat-box" class="flex-1 overflow-y-auto space-y-3 px-2 py-4 flex flex-col"></div>
+  <!-- Main Content -->
+  <div class="w-full max-w-3xl text-center">
+    <h1 class="text-5xl font-bold mb-2 tracking-wide">STEVE AI</h1>
+    <div class="text-4xl mb-6">🤖</div>
+    <h2 class="text-2xl font-semibold mb-8">THE FUTURE OF ASSISTANTS</h2>
 
-    <!-- Input -->
-    <form id="chat-form" class="flex gap-2 mt-4">
-      <input
-        id="message"
-        type="text"
-        placeholder="Ask anything..."
-        class="flex-1 bg-[#1f1f1f] border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-        autocomplete="off"
-      />
-      <button
-        type="submit"
-        class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-bold"
-      >Send</button>
-    </form>
-  </main>
+    <div class="bg-[#222] dark:bg-gray-200 text-white dark:text-black p-6 rounded-xl shadow-xl max-w-2xl mx-auto">
+      <div class="flex items-center gap-2 mb-4">
+        <input id="chat-input" type="text" placeholder="Ask something..." class="w-full p-3 rounded-lg bg-[#111] dark:bg-white border border-gray-700 dark:border-gray-300 text-white dark:text-black focus:outline-none focus:ring-2 focus:ring-orange-500" />
+        <button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">🎤</button>
+      </div>
+      <div id="suggestions" class="flex flex-wrap justify-center gap-2 text-sm text-gray-300 dark:text-gray-700">
+        <span class="bg-gray-800 dark:bg-gray-300 px-3 py-1 rounded-full">Summarize text</span>
+        <span class="bg-gray-800 dark:bg-gray-300 px-3 py-1 rounded-full">Get advice</span>
+        <span class="bg-gray-800 dark:bg-gray-300 px-3 py-1 rounded-full">Analyze data</span>
+        <span class="bg-gray-800 dark:bg-gray-300 px-3 py-1 rounded-full">Code</span>
+        <span class="bg-gray-800 dark:bg-gray-300 px-3 py-1 rounded-full">Help me write</span>
+      </div>
+    </div>
 
-  <!-- Footer -->
-  <footer class="text-center py-2 text-xs text-gray-500 border-t border-orange-400">
-    By using this AI, you agree to our <a href="#" class="underline">Terms</a> and <a href="#" class="underline">Privacy Policy</a>.
-  </footer>
+    <p class="text-xs text-gray-500 dark:text-gray-700 mt-6">
+      By using this app you agree to the <a href="#" class="underline">Terms</a> and <a href="#" class="underline">Privacy Policy</a>.
+    </p>
+  </div>
 
+  <!-- JS -->
   <script>
-    const chatBox = document.getElementById("chat-box");
-    const inputField = document.getElementById("message");
-    const form = document.getElementById("chat-form");
-
-    function addBubble(text, sender) {
-      const div = document.createElement("div");
-      div.className = `max-w-[80%] px-4 py-2 rounded-xl whitespace-pre-wrap ${
-        sender === "user"
-          ? "bg-orange-600 self-end text-black"
-          : "bg-[#2a2a2a] self-start text-white"
-      }`;
-      div.innerText = text;
-      chatBox.appendChild(div);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    async function simulateTyping(text, delay = 15) {
-      const bubble = document.createElement("div");
-      bubble.className = "max-w-[80%] px-4 py-2 rounded-xl whitespace-pre-wrap bg-[#2a2a2a] self-start text-white";
-      chatBox.appendChild(bubble);
-      for (let i = 0; i < text.length; i++) {
-        bubble.innerText += text[i];
-        await new Promise(r => setTimeout(r, delay));
-        chatBox.scrollTop = chatBox.scrollHeight;
+    function toggleTheme() {
+      const root = document.documentElement;
+      const isDark = root.classList.contains('dark');
+      if (isDark) {
+        root.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        root.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
       }
     }
 
-    async function sendMessage(message) {
-      addBubble("You: " + message, "user");
+    // Apply saved theme
+    if (localStorage.getItem('theme') === 'light') {
+      document.documentElement.classList.remove('dark');
+    }
 
+    // Server status check
+    async function checkServer() {
       try {
-        const res = await fetch("https://your-server-url/ask", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: message })
-        });
-        const data = await res.json();
-        if (data.response) {
-          await simulateTyping("Steve: " + data.response);
+        const res = await fetch('/ask', { method: 'HEAD' });
+        if (res.ok) {
+          document.getElementById('status-indicator').classList.replace('bg-gray-400', 'bg-green-500');
+          document.getElementById('status-text').textContent = 'Online';
         } else {
-          addBubble("Error: Invalid response", "bot");
+          throw new Error('Server error');
         }
-      } catch (err) {
-        addBubble("Error: " + err.message, "bot");
+      } catch (e) {
+        document.getElementById('status-indicator').classList.replace('bg-gray-400', 'bg-red-500');
+        document.getElementById('status-text').textContent = 'Offline';
       }
     }
 
-    form.addEventListener("submit", e => {
-      e.preventDefault();
-      const message = inputField.value.trim();
-      if (!message) return;
-      inputField.value = "";
-      sendMessage(message);
-    });
-
-    inputField.focus();
+    checkServer();
   </script>
+
 </body>
 </html>
