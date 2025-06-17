@@ -65,6 +65,8 @@
     </div>
 
     <script>
+      const API_URL = "{{API_URL}}"; // dynamically updated by backend
+
       const chatBox = document.getElementById('chatBox');
       const inputBox = document.getElementById('inputBox');
       const sendBtn = document.getElementById('sendBtn');
@@ -116,11 +118,10 @@
           botBubble.innerText = 'Typing' + '.'.repeat(dots);
         }, 300);
 
-        // Silent system instruction
         const systemPrompt = `You are Steve, an intelligent and friendly AI created by Saadpie using LLaMA 2. Respond casually and clearly. Only reveal your identity if directly asked.\n\nUser: ${prompt}`;
 
         try {
-          const res = await fetch('https://dd5d-35-238-136-55.ngrok-free.app/ask', {
+          const res = await fetch(`${API_URL}/ask`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: systemPrompt })
@@ -166,7 +167,6 @@
         }
       });
 
-      // Online/offline status
       function updateStatus() {
         status.textContent = navigator.onLine ? '🟢 Online' : '🔌 Offline';
       }
