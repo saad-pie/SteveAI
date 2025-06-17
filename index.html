@@ -1,140 +1,173 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>STEVE AI</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
-    body {
-      font-family: 'Patrick Hand', cursive;
-    }
-    .cursor {
-      display: inline-block;
-      animation: blink 1s infinite;
-    }
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-    .message {
-      max-width: 75%;
-      padding: 0.75rem 1rem;
-      border-radius: 1rem;
-      margin: 0.5rem;
-      word-wrap: break-word;
-      animation: fadeIn 0.3s ease-in-out;
-    }
-    .bot { background-color: #2d2d2d; color: white; align-self: flex-start; }
-    .user { background-color: #f97316; color: white; align-self: flex-end; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
-</head>
-<body class="text-white bg-[#111] dark:bg-white dark:text-black min-h-screen flex flex-col items-center p-4">
-
-  <div class="absolute top-4 right-4 flex items-center gap-4">
-    <div class="flex items-center gap-2 text-sm">
-      <div id="status-indicator" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></div>
-      <span id="status-text">Checking...</span>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Steve AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: '#f97316',
+              dark: '#1a1a1a',
+              surface: '#2a2a2a',
+            },
+            fontFamily: {
+              hand: ['"Patrick Hand"', 'cursive'],
+            },
+          },
+        },
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet" />
+    <style>
+      body {
+        font-family: 'Patrick Hand', cursive;
+      }
+      .bubble {
+        animation: slide-up 0.3s ease-in-out;
+      }
+      @keyframes slide-up {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-dark text-white min-h-screen flex flex-col">
+    <div class="flex justify-between items-center px-4 py-2 border-b border-gray-700">
+      <h1 class="text-3xl font-bold">Steve AI</h1>
+      <div class="flex gap-4">
+        <span id="status" class="text-sm text-gray-400">🔌 Offline</span>
+        <button id="toggleTheme" class="text-sm bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">Toggle Theme</button>
+      </div>
     </div>
-    <button onclick="toggleTheme()" class="bg-orange-500 text-white px-3 py-1 rounded-lg hover:bg-orange-600">Toggle Theme</button>
-  </div>
 
-  <div class="w-full max-w-3xl">
-    <h1 class="text-5xl font-bold mb-4 text-center tracking-wide">STEVE AI</h1>
-    <div id="chatbox" class="flex flex-col gap-2 p-4 h-[60vh] overflow-y-auto border border-gray-700 dark:border-gray-300 rounded-xl mb-4 bg-[#1a1a1a] dark:bg-gray-100"></div>
+    <div id="chatBox" class="flex-1 overflow-y-auto px-4 py-6 space-y-4"></div>
 
-    <div class="flex items-center gap-2">
-      <input id="chat-input" type="text" placeholder="Ask something..." class="w-full p-3 rounded-lg bg-[#111] dark:bg-white border border-gray-700 dark:border-gray-300 text-white dark:text-black focus:outline-none focus:ring-2 focus:ring-orange-500" />
-      <button onclick="sendMessage()" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">Send</button>
-      <button onclick="resendMessage()" class="bg-gray-700 hover:bg-gray-800 text-white px-3 py-2 rounded-lg">↻</button>
+    <div class="w-full max-w-3xl mx-auto px-4 py-3">
+      <div class="flex items-end gap-2">
+        <textarea id="inputBox" rows="1" placeholder="Ask anything..."
+          class="w-full resize-none p-3 rounded-lg bg-[#1f1f1f] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"></textarea>
+        <button id="sendBtn" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">Send</button>
+      </div>
     </div>
-  </div>
 
-  <script>
-    let lastPrompt = '';
+    <script>
+      const chatBox = document.getElementById('chatBox');
+      const inputBox = document.getElementById('inputBox');
+      const sendBtn = document.getElementById('sendBtn');
+      const status = document.getElementById('status');
+      const toggleTheme = document.getElementById('toggleTheme');
 
-    async function speak(text) {
-      const synth = window.speechSynthesis;
-      const utter = new SpeechSynthesisUtterance(text);
-      synth.speak(utter);
-    }
+      let currentTheme = 'dark';
+      toggleTheme.onclick = () => {
+        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.body.classList.toggle('bg-dark');
+        document.body.classList.toggle('bg-white');
+        document.body.classList.toggle('text-white');
+        document.body.classList.toggle('text-black');
+      };
 
-    function toggleTheme() {
-      const root = document.documentElement;
-      const isDark = root.classList.contains('dark');
-      root.classList.toggle('dark');
-      localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    }
+      inputBox.addEventListener('input', () => {
+        inputBox.style.height = 'auto';
+        inputBox.style.height = inputBox.scrollHeight + 'px';
+      });
 
-    if (localStorage.getItem('theme') === 'light') {
-      document.documentElement.classList.remove('dark');
-    }
-
-    async function checkServer() {
-      try {
-        const res = await fetch('/ask', { method: 'HEAD' });
-        document.getElementById('status-indicator').classList.replace('bg-gray-400', 'bg-green-500');
-        document.getElementById('status-text').textContent = 'Online';
-      } catch {
-        document.getElementById('status-indicator').classList.replace('bg-gray-400', 'bg-red-500');
-        document.getElementById('status-text').textContent = 'Offline';
+      function scrollToBottom() {
+        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
       }
-    }
-    checkServer();
 
-    async function sendMessage() {
-      const input = document.getElementById('chat-input');
-      const prompt = input.value.trim();
-      if (!prompt) return;
-      input.value = '';
-      lastPrompt = prompt;
-
-      appendMessage(prompt, 'user');
-      appendMessage('Typing <span class="cursor">|</span>', 'bot', true);
-
-      try {
-        const res = await fetch('/ask', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt })
-        });
-        const data = await res.json();
-        updateLastBotMessage(data.response);
-        speak(data.response);
-      } catch (e) {
-        updateLastBotMessage('Error connecting to server.');
+      function createBubble(message, from = 'user') {
+        const bubble = document.createElement('div');
+        bubble.className = `bubble max-w-xl rounded-xl px-4 py-3 whitespace-pre-wrap ${
+          from === 'user' ? 'bg-orange-500 self-end text-white' : 'bg-surface text-gray-100'
+        }`;
+        bubble.innerText = message;
+        bubble.classList.add('bubble');
+        chatBox.appendChild(bubble);
+        scrollToBottom();
+        return bubble;
       }
-    }
 
-    function resendMessage() {
-      if (lastPrompt) {
-        document.getElementById('chat-input').value = lastPrompt;
-        sendMessage();
+      async function sendPrompt() {
+        const prompt = inputBox.value.trim();
+        if (!prompt) return;
+
+        inputBox.value = '';
+        inputBox.style.height = 'auto';
+
+        const userBubble = createBubble(prompt, 'user');
+
+        const botBubble = createBubble('Typing |', 'bot');
+        let dots = 0;
+        const typingInterval = setInterval(() => {
+          dots = (dots + 1) % 4;
+          botBubble.innerText = 'Typing' + '.'.repeat(dots);
+        }, 300);
+
+        try {
+          const res = await fetch('https://2bb6-103-73-101-50.ngrok-free.app/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+          });
+          const data = await res.json();
+          clearInterval(typingInterval);
+          botBubble.innerText = data.response || 'Error: No response';
+
+          // TTS
+          const speakBtn = document.createElement('button');
+          speakBtn.textContent = '🔊';
+          speakBtn.className = 'ml-2 text-orange-400 hover:text-orange-300';
+          speakBtn.onclick = () => {
+            const utter = new SpeechSynthesisUtterance(botBubble.innerText);
+            speechSynthesis.speak(utter);
+          };
+
+          // Refresh
+          const refreshBtn = document.createElement('button');
+          refreshBtn.textContent = '↻';
+          refreshBtn.className = 'ml-2 text-orange-400 hover:text-orange-300';
+          refreshBtn.onclick = () => {
+            inputBox.value = prompt;
+            sendPrompt();
+          };
+
+          const btnRow = document.createElement('div');
+          btnRow.className = 'flex justify-end gap-2 mt-1';
+          btnRow.appendChild(speakBtn);
+          btnRow.appendChild(refreshBtn);
+          botBubble.appendChild(btnRow);
+
+        } catch (err) {
+          clearInterval(typingInterval);
+          botBubble.innerText = 'Error connecting to server.';
+        }
       }
-    }
 
-    function appendMessage(text, role, typing = false) {
-      const div = document.createElement('div');
-      div.className = `message ${role}`;
-      div.innerHTML = text;
-      const box = document.getElementById('chatbox');
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight;
-    }
+      sendBtn.onclick = sendPrompt;
+      inputBox.addEventListener('keypress', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendPrompt();
+        }
+      });
 
-    function updateLastBotMessage(newText) {
-      const box = document.getElementById('chatbox');
-      const botMsgs = [...box.getElementsByClassName('bot')];
-      if (botMsgs.length > 0) {
-        botMsgs[botMsgs.length - 1].innerHTML = newText;
-        box.scrollTop = box.scrollHeight;
+      // Online/Offline status
+      function updateStatus() {
+        status.textContent = navigator.onLine ? '🟢 Online' : '🔌 Offline';
       }
-    }
-  </script>
-</body>
+      window.addEventListener('online', updateStatus);
+      window.addEventListener('offline', updateStatus);
+      updateStatus();
+    </script>
+  </body>
 </html>
