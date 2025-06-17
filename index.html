@@ -13,6 +13,7 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       display: flex;
       height: 100vh;
+      overflow: hidden;
     }
 
     #sidebar {
@@ -50,6 +51,7 @@
       margin: 0 0 20px 0;
       font-size: 2rem;
       color: #00ffe1;
+      text-align: center;
     }
 
     #chat-box {
@@ -70,6 +72,7 @@
       border-radius: 16px;
       white-space: pre-wrap;
       position: relative;
+      word-break: break-word;
     }
 
     .user {
@@ -97,6 +100,7 @@
       outline: none;
       background: #111;
       color: #00ffee;
+      font-size: 1rem;
     }
 
     button {
@@ -108,6 +112,7 @@
       cursor: pointer;
       font-weight: bold;
       transition: background 0.3s ease;
+      font-size: 1rem;
     }
 
     button:hover {
@@ -214,7 +219,6 @@
       session.push({ text, sender: "bot" });
     }
 
-    // ✅ Setup listeners
     document.getElementById("send-btn").addEventListener("click", function (e) {
       e.preventDefault();
       sendMessage();
@@ -227,7 +231,6 @@
       }
     });
 
-    // ✅ Initialize history
     updateHistoryPanel();
     inputField.focus();
   </script>
