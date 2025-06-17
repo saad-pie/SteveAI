@@ -2,171 +2,104 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Steve AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Steve AI - Carrot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
     body {
-      margin: 0;
-      background-color: #0e0e0e;
-      font-family: 'Segoe UI', sans-serif;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    .navbar {
-      width: 100%;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #111;
-      border-bottom: 1px solid #333;
-      position: fixed;
-      top: 0;
-      z-index: 1;
-    }
-
-    .navbar-title {
-      font-size: 1.2rem;
-      font-weight: bold;
-    }
-
-    .nav-buttons {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .button {
-      background: #222;
-      border: 1px solid #444;
-      color: #fff;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      cursor: pointer;
-    }
-
-    .center-box {
-      text-align: center;
-      margin-top: 6rem;
-      width: 100%;
-      max-width: 900px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex: 1;
-    }
-
-    .center-box h1 {
-      font-size: 2rem;
-      margin: 1rem 0;
-    }
-
-    .chat-box {
-      flex: 1;
-      width: 100%;
-      max-height: 60vh;
-      overflow-y: auto;
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid #00ffee88;
-      border-radius: 1rem;
-      padding: 1rem;
-      margin-top: 1rem;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .bubble {
-      max-width: 70%;
-      padding: 12px;
-      margin: 10px;
-      border-radius: 16px;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .user {
-      align-self: flex-end;
-      background: #003355;
-      color: #99ccff;
-    }
-
-    .bot {
-      align-self: flex-start;
-      background: #004d40;
-      color: #00ffaa;
-    }
-
-    .input-box {
-      background: #1a1a1a;
-      padding: 0.8rem 1rem;
-      border-radius: 1rem;
-      display: flex;
-      gap: 0.5rem;
-      align-items: center;
-      margin-top: 1rem;
-      width: 100%;
-      max-width: 600px;
-    }
-
-    .input-box input {
-      background: transparent;
-      border: none;
-      color: white;
-      outline: none;
-      flex: 1;
-      font-size: 1rem;
-    }
-
-    .send-btn {
-      background: #00ffee;
-      color: #000;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    footer {
-      font-size: 0.75rem;
-      color: #777;
-      margin: 0.5rem;
+      font-family: 'Patrick Hand', cursive;
     }
   </style>
 </head>
-<body>
+<body class="bg-[#1a1a1a] text-white flex flex-col h-screen">
 
-  <div class="navbar">
-    <div class="navbar-title">Steve AI</div>
-    <div class="nav-buttons">
-      <div class="button">Log in</div>
-      <div class="button">Sign up</div>
-    </div>
-  </div>
+  <!-- Header -->
+  <header class="text-center py-4 border-b border-orange-400">
+    <h1 class="text-4xl md:text-5xl font-bold text-orange-400">CARROT</h1>
+    <div class="text-2xl">🥕</div>
+    <p class="text-lg text-gray-300 mt-1">WELCOME TO STEVE AI - THE FUTURE</p>
+  </header>
 
-  <div class="center-box">
-    <img src="https://cdn-icons-png.flaticon.com/512/3314/3314463.png" width="40" alt="AI icon"/>
-    <h1>Welcome to Steve AI – The Future</h1>
+  <!-- Chat Section -->
+  <main class="flex flex-1 overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="hidden md:block w-64 bg-[#111] p-4 overflow-y-auto border-r border-orange-500">
+      <h2 class="text-xl text-orange-300 mb-4">Previous Chats</h2>
+      <div id="chat-history" class="space-y-2 text-sm text-gray-300"></div>
+    </aside>
 
-    <div class="chat-box" id="chat-box"></div>
+    <!-- Chat area -->
+    <section class="flex flex-col flex-1 p-4 overflow-hidden">
+      <div id="chat-box" class="flex-1 overflow-y-auto mb-4 space-y-2 px-2"></div>
 
-    <div class="input-box">
-      <input type="text" id="message" placeholder="Ask Steve anything..." />
-      <button class="send-btn" id="send-btn">Send</button>
-    </div>
-  </div>
+      <!-- Input -->
+      <div class="flex gap-2">
+        <input
+          id="message"
+          type="text"
+          placeholder="Ask anything..."
+          class="flex-1 bg-[#1f1f1f] border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        />
+        <button id="send-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-bold">Send</button>
+      </div>
+    </section>
+  </main>
 
-  <footer>
-    By messaging Steve AI you agree to our Terms and have read our Privacy Policy.
+  <!-- Footer -->
+  <footer class="text-center py-2 text-xs text-gray-500 border-t border-orange-400">
+    By messaging STEVE AI you agree to our <a href="#" class="underline">Terms</a> and <a href="#" class="underline">Privacy Policy</a>.
   </footer>
 
   <script>
     const chatBox = document.getElementById("chat-box");
     const inputField = document.getElementById("message");
+    const historyPanel = document.getElementById("chat-history");
+    const historyKey = "carrot-steve-history";
+    let session = [];
+    let allChats = JSON.parse(localStorage.getItem(historyKey) || "[]");
+
+    function addBubble(text, sender, save = true) {
+      const div = document.createElement("div");
+      div.className = `max-w-[80%] px-4 py-2 rounded-xl whitespace-pre-wrap ${
+        sender === "user"
+          ? "bg-orange-600 self-end text-black"
+          : "bg-[#2a2a2a] self-start text-white"
+      }`;
+      div.innerText = text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      if (save) {
+        session.push({ text, sender });
+        saveSession();
+      }
+    }
+
+    function saveSession() {
+      if (session.length > 0) {
+        allChats.push(session);
+        localStorage.setItem(historyKey, JSON.stringify(allChats));
+        updateHistoryPanel();
+      }
+    }
+
+    function updateHistoryPanel() {
+      historyPanel.innerHTML = "";
+      allChats.forEach((s, i) => {
+        const el = document.createElement("div");
+        el.className = "cursor-pointer p-2 bg-[#1f1f1f] rounded-md hover:bg-orange-500 hover:text-black";
+        el.innerText = s[0]?.text?.slice(0, 30) || "(empty)";
+        el.onclick = () => loadSession(i);
+        historyPanel.appendChild(el);
+      });
+    }
+
+    function loadSession(index) {
+      chatBox.innerHTML = "";
+      const selected = allChats[index];
+      selected.forEach(msg => addBubble(msg.text, msg.sender, false));
+    }
 
     async function sendMessage() {
       const message = inputField.value.trim();
@@ -175,7 +108,7 @@
       inputField.value = "";
 
       try {
-        const res = await fetch("https://e739-35-227-21-175.ngrok-free.app/ask", {
+        const res = await fetch("https://your-server-url/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: message })
@@ -191,39 +124,31 @@
       }
     }
 
-    function addBubble(text, sender) {
-      const bubble = document.createElement("div");
-      bubble.className = `bubble ${sender}`;
-      bubble.innerText = text;
-      chatBox.appendChild(bubble);
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
     async function simulateTyping(text, delay = 15) {
       const bubble = document.createElement("div");
-      bubble.className = "bubble bot";
+      bubble.className = "max-w-[80%] px-4 py-2 rounded-xl whitespace-pre-wrap bg-[#2a2a2a] self-start text-white";
       chatBox.appendChild(bubble);
-      chatBox.scrollTop = chatBox.scrollHeight;
-
       for (let i = 0; i < text.length; i++) {
         bubble.innerText += text[i];
         await new Promise(r => setTimeout(r, delay));
         chatBox.scrollTop = chatBox.scrollHeight;
       }
+      session.push({ text, sender: "bot" });
     }
 
-    document.getElementById("send-btn").addEventListener("click", function (e) {
+    document.getElementById("send-btn").addEventListener("click", e => {
       e.preventDefault();
       sendMessage();
     });
 
-    inputField.addEventListener("keypress", function (e) {
+    inputField.addEventListener("keypress", e => {
       if (e.key === "Enter") {
         e.preventDefault();
         sendMessage();
       }
     });
 
+    updateHistoryPanel();
     inputField.focus();
   </script>
 </body>
