@@ -19,7 +19,7 @@
             },
           },
         },
-      }
+      };
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet" />
     <style>
@@ -28,6 +28,7 @@
       }
       .bubble {
         animation: slide-up 0.3s ease-in-out;
+        word-wrap: break-word;
       }
       @keyframes slide-up {
         from {
@@ -42,16 +43,19 @@
     </style>
   </head>
   <body class="bg-dark text-white min-h-screen flex flex-col">
+    <!-- Header -->
     <div class="flex justify-between items-center px-4 py-2 border-b border-gray-700">
       <h1 class="text-3xl font-bold">Steve AI</h1>
-      <div class="flex gap-4">
+      <div class="flex gap-4 items-center">
         <span id="status" class="text-sm text-gray-400">🔌 Offline</span>
         <button id="toggleTheme" class="text-sm bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">Toggle Theme</button>
       </div>
     </div>
 
-    <div id="chatBox" class="flex-1 overflow-y-auto px-4 py-6 space-y-4"></div>
+    <!-- Chat Box -->
+    <div id="chatBox" class="flex-1 overflow-y-auto px-4 py-6 space-y-4 flex flex-col"></div>
 
+    <!-- Input -->
     <div class="w-full max-w-3xl mx-auto px-4 py-3">
       <div class="flex items-end gap-2">
         <textarea id="inputBox" rows="1" placeholder="Ask anything..."
@@ -87,11 +91,10 @@
 
       function createBubble(message, from = 'user') {
         const bubble = document.createElement('div');
-        bubble.className = `bubble max-w-xl rounded-xl px-4 py-3 whitespace-pre-wrap ${
-          from === 'user' ? 'bg-orange-500 self-end text-white' : 'bg-surface text-gray-100'
+        bubble.className = `bubble max-w-[90%] w-fit rounded-xl px-4 py-3 whitespace-pre-wrap break-words ${
+          from === 'user' ? 'bg-primary self-end text-white' : 'bg-surface self-start text-gray-100'
         }`;
         bubble.innerText = message;
-        bubble.classList.add('bubble');
         chatBox.appendChild(bubble);
         scrollToBottom();
         return bubble;
@@ -104,7 +107,7 @@
         inputBox.value = '';
         inputBox.style.height = 'auto';
 
-        const userBubble = createBubble(prompt, 'user');
+        createBubble(prompt, 'user');
 
         const botBubble = createBubble('Typing |', 'bot');
         let dots = 0;
@@ -113,17 +116,21 @@
           botBubble.innerText = 'Typing' + '.'.repeat(dots);
         }, 300);
 
+        // Silent system instruction
+        const systemPrompt = `You are Steve, an intelligent and friendly AI created by Saadpie using LLaMA 2. Respond casually and clearly. Only reveal your identity if directly asked.\n\nUser: ${prompt}`;
+
         try {
           const res = await fetch('https://6fc8-35-243-164-156.ngrok-free.app/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({ prompt: systemPrompt })
           });
+
           const data = await res.json();
           clearInterval(typingInterval);
+
           botBubble.innerText = data.response || 'Error: No response';
 
-          // TTS
           const speakBtn = document.createElement('button');
           speakBtn.textContent = '🔊';
           speakBtn.className = 'ml-2 text-orange-400 hover:text-orange-300';
@@ -132,7 +139,6 @@
             speechSynthesis.speak(utter);
           };
 
-          // Refresh
           const refreshBtn = document.createElement('button');
           refreshBtn.textContent = '↻';
           refreshBtn.className = 'ml-2 text-orange-400 hover:text-orange-300';
@@ -146,7 +152,6 @@
           btnRow.appendChild(speakBtn);
           btnRow.appendChild(refreshBtn);
           botBubble.appendChild(btnRow);
-
         } catch (err) {
           clearInterval(typingInterval);
           botBubble.innerText = 'Error connecting to server.';
@@ -161,7 +166,7 @@
         }
       });
 
-      // Online/Offline status
+      // Online/offline status
       function updateStatus() {
         status.textContent = navigator.onLine ? '🟢 Online' : '🔌 Offline';
       }
