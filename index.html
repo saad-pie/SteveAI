@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Steve AI - Carrot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Steve AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
@@ -12,54 +12,46 @@
     }
   </style>
 </head>
-<body class="bg-[#1a1a1a] text-white flex flex-col h-screen">
+<body class="bg-[#1a1a1a] text-white min-h-screen flex flex-col">
 
   <!-- Header -->
   <header class="text-center py-4 border-b border-orange-400">
-    <h1 class="text-4xl md:text-5xl font-bold text-orange-400">CARROT</h1>
-    <div class="text-2xl">🥕</div>
-    <p class="text-lg text-gray-300 mt-1">WELCOME TO STEVE AI - THE FUTURE</p>
+    <h1 class="text-4xl md:text-5xl font-bold text-orange-400">STEVE AI</h1>
+    <p class="text-md text-gray-300 mt-1">YOUR PERSONAL AI COMPANION</p>
   </header>
 
   <!-- Chat Section -->
-  <main class="flex flex-1 overflow-hidden">
-    <!-- Sidebar -->
-    <aside class="hidden md:block w-64 bg-[#111] p-4 overflow-y-auto border-r border-orange-500">
-      <h2 class="text-xl text-orange-300 mb-4">Previous Chats</h2>
-      <div id="chat-history" class="space-y-2 text-sm text-gray-300"></div>
-    </aside>
+  <main class="flex-1 p-4 flex flex-col overflow-hidden">
+    <!-- Chat box -->
+    <div id="chat-box" class="flex-1 overflow-y-auto space-y-3 px-2 py-4 flex flex-col"></div>
 
-    <!-- Chat area -->
-    <section class="flex flex-col flex-1 p-4 overflow-hidden">
-      <div id="chat-box" class="flex-1 overflow-y-auto mb-4 space-y-2 px-2"></div>
-
-      <!-- Input -->
-      <div class="flex gap-2">
-        <input
-          id="message"
-          type="text"
-          placeholder="Ask anything..."
-          class="flex-1 bg-[#1f1f1f] border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-        />
-        <button id="send-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-bold">Send</button>
-      </div>
-    </section>
+    <!-- Input -->
+    <form id="chat-form" class="flex gap-2 mt-4">
+      <input
+        id="message"
+        type="text"
+        placeholder="Ask anything..."
+        class="flex-1 bg-[#1f1f1f] border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        autocomplete="off"
+      />
+      <button
+        type="submit"
+        class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2 rounded-lg font-bold"
+      >Send</button>
+    </form>
   </main>
 
   <!-- Footer -->
   <footer class="text-center py-2 text-xs text-gray-500 border-t border-orange-400">
-    By messaging STEVE AI you agree to our <a href="#" class="underline">Terms</a> and <a href="#" class="underline">Privacy Policy</a>.
+    By using this AI, you agree to our <a href="#" class="underline">Terms</a> and <a href="#" class="underline">Privacy Policy</a>.
   </footer>
 
   <script>
     const chatBox = document.getElementById("chat-box");
     const inputField = document.getElementById("message");
-    const historyPanel = document.getElementById("chat-history");
-    const historyKey = "carrot-steve-history";
-    let session = [];
-    let allChats = JSON.parse(localStorage.getItem(historyKey) || "[]");
+    const form = document.getElementById("chat-form");
 
-    function addBubble(text, sender, save = true) {
+    function addBubble(text, sender) {
       const div = document.createElement("div");
       div.className = `max-w-[80%] px-4 py-2 rounded-xl whitespace-pre-wrap ${
         sender === "user"
@@ -69,59 +61,6 @@
       div.innerText = text;
       chatBox.appendChild(div);
       chatBox.scrollTop = chatBox.scrollHeight;
-
-      if (save) {
-        session.push({ text, sender });
-        saveSession();
-      }
-    }
-
-    function saveSession() {
-      if (session.length > 0) {
-        allChats.push(session);
-        localStorage.setItem(historyKey, JSON.stringify(allChats));
-        updateHistoryPanel();
-      }
-    }
-
-    function updateHistoryPanel() {
-      historyPanel.innerHTML = "";
-      allChats.forEach((s, i) => {
-        const el = document.createElement("div");
-        el.className = "cursor-pointer p-2 bg-[#1f1f1f] rounded-md hover:bg-orange-500 hover:text-black";
-        el.innerText = s[0]?.text?.slice(0, 30) || "(empty)";
-        el.onclick = () => loadSession(i);
-        historyPanel.appendChild(el);
-      });
-    }
-
-    function loadSession(index) {
-      chatBox.innerHTML = "";
-      const selected = allChats[index];
-      selected.forEach(msg => addBubble(msg.text, msg.sender, false));
-    }
-
-    async function sendMessage() {
-      const message = inputField.value.trim();
-      if (!message) return;
-      addBubble("You: " + message, "user");
-      inputField.value = "";
-
-      try {
-        const res = await fetch("https://your-server-url/ask", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: message })
-        });
-        const data = await res.json();
-        if (data.response) {
-          simulateTyping("Steve: " + data.response);
-        } else {
-          addBubble("Error: Invalid response", "bot");
-        }
-      } catch (err) {
-        addBubble("Error: " + err.message, "bot");
-      }
     }
 
     async function simulateTyping(text, delay = 15) {
@@ -133,22 +72,36 @@
         await new Promise(r => setTimeout(r, delay));
         chatBox.scrollTop = chatBox.scrollHeight;
       }
-      session.push({ text, sender: "bot" });
     }
 
-    document.getElementById("send-btn").addEventListener("click", e => {
-      e.preventDefault();
-      sendMessage();
-    });
+    async function sendMessage(message) {
+      addBubble("You: " + message, "user");
 
-    inputField.addEventListener("keypress", e => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        sendMessage();
+      try {
+        const res = await fetch("https://your-server-url/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: message })
+        });
+        const data = await res.json();
+        if (data.response) {
+          await simulateTyping("Steve: " + data.response);
+        } else {
+          addBubble("Error: Invalid response", "bot");
+        }
+      } catch (err) {
+        addBubble("Error: " + err.message, "bot");
       }
+    }
+
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+      const message = inputField.value.trim();
+      if (!message) return;
+      inputField.value = "";
+      sendMessage(message);
     });
 
-    updateHistoryPanel();
     inputField.focus();
   </script>
 </body>
