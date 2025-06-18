@@ -117,7 +117,7 @@
 
         try {
 const res = await fetch( "https://55e7-34-171-155-228.ngrok-free.app/ask",
-            method: 'POST',
+          {method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: systemPrompt })
           });
