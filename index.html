@@ -113,20 +113,18 @@
           botBubble.innerText = 'Typing' + '.'.repeat(dots);
         }, 300);
 
-        const systemPrompt = `You are Steve, an intelligent and friendly AI created by Saadpie using LLaMA 2. Respond casually and clearly. Only reveal your identity if directly asked.\n\nUser: ${prompt}`;
-
         try {
-const res = await fetch( "https://5b76-35-193-211-12.ngrok-free.app/ask",
-           {
+          const res = await fetch("https://steveai-chatbot.replit.app/chat", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: systemPrompt })
+            body: JSON.stringify({ message: prompt })
           });
 
           const data = await res.json();
           clearInterval(typingInterval);
 
-          botBubble.innerText = data.response || 'Error: No response';
+          // ✅ Updated to use 'data.content' instead of 'data.response'
+          botBubble.innerText = data.content || 'Error: No response';
 
           const speakBtn = document.createElement('button');
           speakBtn.textContent = '🔊';
