@@ -1,13 +1,15 @@
+import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 
 app = Flask(__name__)
-CORS(app)  # Allow all origins by default
+CORS(app)
 
-API_KEY = "50f0de0bfbec26145ca5164f1ddf9104710a976d8e96bb4da1f398ead044986c"
+# 🔒 API key loaded from environment variable
+API_KEY = os.environ.get("TOGETHER_API_KEY")
 
-# 🧠 Custom system prompt
+# 🧠 System prompt
 SYSTEM_PROMPT = (
     "You are Steve, a friendly AI chatbot created by Saadpie. "
     "You were not made by any company or lab — just Saadpie. "
@@ -17,19 +19,19 @@ SYSTEM_PROMPT = (
 
 @app.after_request
 def after_request(response):
-    # CORS headers for browser
-    response.headers.add('Access-Control-Allow-Origin', '*')
-    response.headers.add('Access-Control-Allow-Headers', 'Content-Type')
-    response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type")
+    response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
     return response
 
 @app.route("/chat", methods=["POST", "OPTIONS"])
 def chat():
     if request.method == "OPTIONS":
-        # Handle CORS preflight
         return '', 204
 
-    user_input = request.json.get("message")
+    user_input = request.json.get("message", "")
+    if not API_KEY:
+        return jsonify({"error": "API key not configured."}), 500
 
     payload = {
         "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
@@ -45,16 +47,19 @@ def chat():
     }
 
     try:
-        response = requests.post("https://api.together.xyz/v1/chat/completions", headers=headers, json=payload)
-        result = response.json()
-        reply = result["choices"][0]["message"]["content"]
-        return jsonify({ "content": reply })
+        res = requests.post("https://api.together.xyz/v1/chat/completions", headers=headers, json=payload)
+        res.raise_for_status()
+        reply = res.json()["choices"][0]["message"]["content"]
+        return jsonify({"content": reply})
     except Exception as e:
-        return jsonify({ "error": str(e) }), 500
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/")
 def home():
     return "✅ Steve AI is alive!"
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    # For Railway, use PORT from env or default to 8080
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
+    
