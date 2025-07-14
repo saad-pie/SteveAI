@@ -6,10 +6,10 @@ import requests
 app = Flask(__name__)
 CORS(app)
 
-# 🔒 API key loaded from environment variable
+# 🔐 API key loaded from environment variable
 API_KEY = os.environ.get("TOGETHER_API_KEY")
 
-# 🧠 System prompt
+# 🧠 Personality of Steve AI
 SYSTEM_PROMPT = (
     "You are Steve, a friendly AI chatbot created by Saadpie. "
     "You were not made by any company or lab — just Saadpie. "
@@ -34,7 +34,7 @@ def chat():
         return jsonify({"error": "API key not configured."}), 500
 
     payload = {
-        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "model": "deepseek-ai/deepseek-llm-33b-chat",  # 👈 You can switch models here if you want!
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_input}
@@ -59,7 +59,6 @@ def home():
     return "✅ Steve AI is alive!"
 
 if __name__ == "__main__":
-    # For Railway, use PORT from env or default to 8080
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
     
