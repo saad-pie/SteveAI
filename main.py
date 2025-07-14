@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 # 🔐 API key loaded from environment variable
-API_KEY = 50f0de0bfbec26145ca5164f1ddf9104710a976d8e96bb4da1f398ead044986c
+API_KEY = "50f0de0bfbec26145ca5164f1ddf9104710a976d8e96bb4da1f398ead044986c"
 
 # 🧠 Personality of Steve AI
 SYSTEM_PROMPT = (
