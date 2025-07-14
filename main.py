@@ -2,14 +2,15 @@ import os
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
+import traceback
 
 app = Flask(__name__)
 CORS(app)
 
-# 🔐 API key loaded from environment variable
+# ✅ Directly placing Together AI API key here (not recommended for production)
 API_KEY = "50f0de0bfbec26145ca5164f1ddf9104710a976d8e96bb4da1f398ead044986c"
 
-# 🧠 Personality of Steve AI
+# 🧠 System prompt
 SYSTEM_PROMPT = (
     "You are Steve, a friendly AI chatbot created by Saadpie. "
     "You were not made by any company or lab — just Saadpie. "
@@ -34,7 +35,7 @@ def chat():
         return jsonify({"error": "API key not configured."}), 500
 
     payload = {
-        "model": "deepseek-ai/deepseek-llm-33b-chat",  # 👈 You can switch models here if you want!
+        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",  # ✅ Valid, free model
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_input}
@@ -52,6 +53,8 @@ def chat():
         reply = res.json()["choices"][0]["message"]["content"]
         return jsonify({"content": reply})
     except Exception as e:
+        print("❌ ERROR:", str(e))
+        traceback.print_exc()  # Print full error
         return jsonify({"error": str(e)}), 500
 
 @app.route("/")
