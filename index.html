@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SteveAI</title>
+<title>SteveAI Chat</title>
 <style>
   body {
     margin: 0;
@@ -13,7 +13,6 @@
     display: flex;
     flex-direction: column;
     height: 100vh;
-    overflow: hidden;
   }
 
   /* Header */
@@ -23,10 +22,10 @@
     left: 0;
     width: 100%;
     height: 70px;
-    background: linear-gradient(90deg, #0f0f0f, #1a1a1a);
+    background: #111;
     display: flex;
     align-items: center;
-    padding: 0 20px;
+    padding: 0 16px;
     gap: 12px;
     border-bottom: 1px solid #27ae60;
     z-index: 10;
@@ -34,6 +33,235 @@
   #header img { height: 50px; width: 50px; border-radius: 50%; }
   #header span { font-size: 1.5rem; font-weight: bold; color: #2ecc71; }
 
+  /* Chat container */
+  #chat {
+    flex: 1;
+    margin-top: 70px;
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Bubbles */
+  .bubble {
+    padding: 12px 16px;
+    border-radius: 20px;
+    font-size: 1rem;
+    line-height: 1.5;
+    max-width: 75%;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    position: relative;
+  }
+  .user { background-color: #1f3d1f; color: #e0ffe0; align-self: flex-end; text-align: right; }
+  .bot { background-color: #162816; color: #e0ffe0; align-self: flex-start; text-align: left; }
+
+  /* Bubble action buttons */
+  .bubble-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 0.8rem;
+  }
+  .bubble-actions button {
+    background: transparent;
+    border: 1px solid #27ae60;
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: #27ae60;
+    cursor: pointer;
+  }
+
+  /* Typing indicator */
+  .typing {
+    align-self: flex-start;
+    font-style: italic;
+    color: #7fff7f;
+  }
+
+  /* Input area */
+  #inputForm {
+    display: flex;
+    padding: 12px 16px;
+    background-color: #0a0a0a;
+    border-top: 1px solid #27ae60;
+    align-items: center;
+    gap: 10px;
+  }
+  #messageInput {
+    flex: 1;
+    padding: 12px 16px;
+    border-radius: 25px;
+    border: 2px solid #27ae60;
+    outline: none;
+    font-size: 16px;
+    background-color: #111;
+    color: #e0ffe0;
+    transition: 0.2s;
+  }
+  #messageInput:focus { border-color: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+
+  #sendBtn {
+    background-color: #2ecc71;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  #sendBtn:hover { transform: scale(1.1); background-color: #27ae60; }
+
+  /* Markdown formatting */
+  .bubble code { background-color: #0d0d0d; padding: 2px 4px; border-radius: 5px; font-family: monospace; }
+  .bubble pre { background-color: #0d0d0d; padding: 8px; border-radius: 6px; overflow-x: auto; }
+  .bubble h1,h2,h3,h4,h5,h6 { margin: 4px 0; color: #7fff7f; }
+  .bubble ul, .bubble ol { margin: 4px 0 4px 24px; }
+  .bubble strong { font-weight: bold; color: #27ae60; }
+  .bubble em { font-style: italic; color: #2ecc71; }
+  .bubble del { text-decoration: line-through; color: #ff5555; }
+  .bubble a { color: #2ecc71; text-decoration: underline; }
+  .bubble hr { border: none; border-top: 2px solid #27ae60; margin: 8px 0; }
+
+  /* Scrollbar */
+  #chat::-webkit-scrollbar { width: 8px; }
+  #chat::-webkit-scrollbar-track { background: #0a0a0a; }
+  #chat::-webkit-scrollbar-thumb { background: #2ecc71; border-radius: 5px; }
+</style>
+</head>
+<body>
+<div id="header">
+  <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0n2LjRukSR-urrbrZMRQu283bXxeHzmvmrhhwcUn3zC0bRJ2fSyPbxEMf&s=10" alt="Logo">
+  <span>STEVE-AI</span>
+</div>
+
+<div id="chat"></div>
+
+<form id="inputForm">
+  <input type="text" id="messageInput" placeholder="Type your message..." required />
+  <button type="submit" id="sendBtn">↑</button>
+</form>
+
+<script>
+const chat = document.getElementById('chat');
+const form = document.getElementById('inputForm');
+const input = document.getElementById('messageInput');
+
+const API_URL = "https://api.a4f.co/v1/";
+const API_KEY = "ddc-a4f-d61cbe09b0f945ea93403a420dba8155";
+
+function markdownToHTML(text) {
+  let html = text;
+  html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+  html = html.replace(/^###### (.*)$/gm, '<h6>$1</h6>');
+  html = html.replace(/^##### (.*)$/gm, '<h5>$1</h5>');
+  html = html.replace(/^#### (.*)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>');
+  html = html.replace(/\*\*\*([^\*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+  html = html.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  html = html.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+  html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+  html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/^>\s*(.*)$/gm, '<blockquote>$1</blockquote>');
+  html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  html = html.replace(/^---$/gm, '<hr>');
+  html = html.replace(/((?:^\s*[-\*\+]\s+.*\n?)+)/gm, m => '<ul><li>' + m.trim().split(/\n/).map(l => l.replace(/^\s*[-\*\+]\s+/, '')).join('</li><li>') + '</li></ul>');
+  html = html.replace(/((?:^\s*\d+\.\s+.*\n?)+)/gm, m => '<ol><li>' + m.trim().split(/\n/).map(l => l.replace(/^\s*\d+\.\s+/, '')).join('</li><li>') + '</li></ol>');
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+function addMessage(text, sender) {
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + sender;
+  bubble.innerHTML = markdownToHTML(text);
+
+  if(sender === 'bot') {
+    const actions = document.createElement('div');
+    actions.className = 'bubble-actions';
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent = 'Copy';
+    copyBtn.onclick = () => navigator.clipboard.writeText(text);
+    const speakBtn = document.createElement('button');
+    speakBtn.textContent = 'Speak';
+    speakBtn.onclick = () => speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+    const resendBtn = document.createElement('button');
+    resendBtn.textContent = 'Resend';
+    resendBtn.onclick = () => { input.value = text; input.focus(); };
+
+    actions.appendChild(copyBtn);
+    actions.appendChild(speakBtn);
+    actions.appendChild(resendBtn);
+    bubble.appendChild(actions);
+  }
+
+  chat.appendChild(bubble);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function fetchAI(endpoint, payload) {
+  try {
+    const res = await fetch(API_URL + endpoint, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`HTTP ${res.status}: ${errText}`);
+    }
+    return await res.json();
+  } catch(err) {
+    addMessage('*Error:* Unable to reach AI API.', 'bot');
+    console.error(err);
+    return null;
+  }
+}
+
+async function getChatReply(message) {
+  const typing = document.createElement('div');
+  typing.className = 'typing';
+  typing.textContent = 'Typing...';
+  chat.appendChild(typing);
+  chat.scrollTop = chat.scrollHeight;
+
+  const data = await fetchAI('chat/completions', {
+    model: 'provider-6/gpt-4o',
+    messages: [{ role: 'user', content: message }]
+  });
+  chat.removeChild(typing);
+  return data?.choices?.[0]?.message?.content || 'No response';
+}
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  const msg = input.value.trim();
+  if (!msg) return;
+  addMessage(msg, 'user');
+  input.value = '';
+  const reply = await getChatReply(msg);
+  addMessage(reply, 'bot');
+});
+
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    form.dispatchEvent(new Event('submit'));
+  }
+});
+</script>
+</body>
+</html>
   /* Chat container */
   #chat {
     flex: 1;
