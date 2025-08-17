@@ -90,7 +90,7 @@ function addMessage(text,sender){
   if(sender==='bot'){
     bubble.innerHTML='<span class="bot-text"></span>';
     const textSpan=bubble.querySelector('.bot-text');
-    let i=0; function type(){ if(i<text.length){ textSpan.innerHTML+=text[i]==='\n'?'<br>':text[i]; i++; chat.scrollTop=chat.scrollHeight; setTimeout(type,20); } }
+    let i=0; function type(){ if(i<text.length){ textSpan.innerHTML+=text[i]==='\n'?'<br>':text[i]; i++; chat.scrollTop=chat.scrollHeight; setTimeout(type,10); } }
     type();
     const actions=document.createElement('div'); actions.className='bubble-actions';
     const copyBtn=document.createElement('button'); copyBtn.textContent='📋'; copyBtn.title='Copy'; copyBtn.onclick=()=>navigator.clipboard.writeText(text).catch(e=>alert('Copy failed'));
