@@ -1,172 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Steve AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              primary: '#f97316',
-              dark: '#1a1a1a',
-              surface: '#2a2a2a',
-            },
-            fontFamily: {
-              hand: ['"Patrick Hand"', 'cursive'],
-            },
-          },
-        },
-      };
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet" />
-    <style>
-      body {
-        font-family: 'Patrick Hand', cursive;
-      }
-      .bubble {
-        animation: slide-up 0.3s ease-in-out;
-        word-wrap: break-word;
-      }
-      @keyframes slide-up {
-        from {
-          transform: translateY(20px);
-          opacity: 0;
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SteveAI</title>
+<style>
+  /* Base */
+  body {
+    margin: 0;
+    font-family: 'Courier New', monospace;
+    background-color: #0a0a0a;
+    color: #e0ffe0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* Header */
+  #header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background: linear-gradient(90deg, #0f0f0f, #1a1a1a);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    border-bottom: 1px solid #27ae60;
+    z-index: 10;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+  }
+  #header img { height: 50px; width: 50px; border-radius: 50%; }
+  #header span { font-size: 1.5rem; font-weight: bold; color: #2ecc71; }
+
+  /* Chat container */
+  #chat {
+    flex: 1;
+    margin-top: 70px;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Bubbles */
+  .bubble {
+    padding: 16px 24px;
+    border-radius: 20px;
+    font-size: 1rem;
+    line-height: 1.5;
+    max-width: 75%;
+    word-wrap: break-word;
+    position: relative;
+    transition: all 0.2s ease;
+    white-space: pre-wrap;
+  }
+  .user { background-color: #1f3d1f; color: #e0ffe0; align-self: flex-end; text-align: right; }
+  .bot { background-color: #162816; color: #e0ffe0; align-self: flex-start; text-align: left; }
+
+  /* Input */
+  #inputForm {
+    display: flex;
+    padding: 12px 20px;
+    background-color: #0a0a0a;
+    border-top: 1px solid #27ae60;
+    align-items: center;
+    gap: 10px;
+  }
+  #messageInput {
+    flex: 1;
+    padding: 14px 20px;
+    border-radius: 25px;
+    border: 2px solid #27ae60;
+    outline: none;
+    font-size: 16px;
+    background-color: #111;
+    color: #e0ffe0;
+    transition: 0.2s;
+  }
+  #messageInput:focus { border-color: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+  #sendBtn {
+    background-color: #2ecc71;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 22px;
+    font-weight: bold;
+    transition: all 0.2s;
+  }
+  #sendBtn:hover { transform: scale(1.1); background-color: #27ae60; }
+
+  /* Markdown formatting */
+  .bubble code { background-color: #0d0d0d; padding: 3px 6px; border-radius: 5px; font-family: monospace; }
+  .bubble pre { background-color: #0d0d0d; padding: 10px; border-radius: 8px; overflow-x: auto; }
+  .bubble h1, h2, h3, h4, h5, h6 { margin: 6px 0; color: #7fff7f; }
+  .bubble ul, .bubble ol { margin: 6px 0 6px 24px; }
+  .bubble strong { font-weight: bold; color: #27ae60; }
+  .bubble em { font-style: italic; color: #2ecc71; }
+  .bubble del { text-decoration: line-through; color: #ff5555; }
+  .bubble a { color: #2ecc71; text-decoration: underline; }
+  .bubble hr { border: none; border-top: 2px solid #27ae60; margin: 10px 0; }
+
+  /* Scrollbar */
+  #chat::-webkit-scrollbar { width: 10px; }
+  #chat::-webkit-scrollbar-track { background: #0a0a0a; }
+  #chat::-webkit-scrollbar-thumb { background: #2ecc71; border-radius: 5px; }
+</style>
+</head>
+<body>
+  <div id="header">
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT0n2LjRukSR-urrbrZMRQu283bXxeHzmvmrhhwcUn3zC0bRJ2fSyPbxEMf&s=10" alt="Logo">
+    <span>STEVE-AI</span>
+  </div>
+
+  <div id="chat"></div>
+
+  <form id="inputForm">
+    <input type="text" id="messageInput" placeholder="Type your message..." required />
+    <button type="submit" id="sendBtn">→</button>
+  </form>
+
+  <script>
+    // ChatGPT functionality
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('inputForm');
+    const input = document.getElementById('messageInput');
+
+    const API_URL = "https://api.a4f.co/v1/";
+    const API_KEY = "ddc-a4f-d61cbe09b0f945ea93403a420dba8155";
+
+    function markdownToHTML(text) {
+      let html = text;
+      html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+      html = html.replace(/^###### (.*)$/gm, '<h6>$1</h6>');
+      html = html.replace(/^##### (.*)$/gm, '<h5>$1</h5>');
+      html = html.replace(/^#### (.*)$/gm, '<h4>$1</h4>');
+      html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+      html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>');
+      html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>');
+      html = html.replace(/\*\*\*([^\*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+      html = html.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+      html = html.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+      html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+      html = html.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+      html = html.replace(/^>\s*(.*)$/gm, '<blockquote>$1</blockquote>');
+      html = html.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+      html = html.replace(/^---$/gm, '<hr>');
+      html = html.replace(/((?:^\s*[-\*\+]\s+.*\n?)+)/gm, m => '<ul><li>' + m.trim().split(/\n/).map(l => l.replace(/^\s*[-\*\+]\s+/, '')).join('</li><li>') + '</li></ul>');
+      html = html.replace(/((?:^\s*\d+\.\s+.*\n?)+)/gm, m => '<ol><li>' + m.trim().split(/\n/).map(l => l.replace(/^\s*\d+\.\s+/, '')).join('</li><li>') + '</li></ol>');
+      html = html.replace(/\n/g, '<br>');
+      return html;
+    }
+
+    function addMessage(text, sender) {
+      const span = document.createElement('span');
+      span.className = 'bubble ' + sender;
+      span.innerHTML = markdownToHTML(text);
+      chat.appendChild(span);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function fetchAI(endpoint, payload) {
+      try {
+        const res = await fetch(API_URL + endpoint, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errText}`);
         }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
+        return await res.json();
+      } catch(err) {
+        addMessage('*Error:* Unable to reach AI API.', 'bot');
+        console.error(err);
+        return null;
       }
-    </style>
-  </head>
-  <body class="bg-dark text-white min-h-screen flex flex-col">
-    <div class="flex justify-between items-center px-4 py-2 border-b border-gray-700">
-      <h1 class="text-3xl font-bold">Steve AI</h1>
-      <div class="flex gap-4 items-center">
-        <span id="status" class="text-sm text-gray-400">🔌 Offline</span>
-        <button id="toggleTheme" class="text-sm bg-gray-700 px-3 py-1 rounded hover:bg-gray-600">Toggle Theme</button>
-      </div>
-    </div>
+    }
 
-    <div id="chatBox" class="flex-1 overflow-y-auto px-4 py-6 space-y-4 flex flex-col"></div>
-
-    <div class="w-full max-w-3xl mx-auto px-4 py-3">
-      <div class="flex items-end gap-2">
-        <textarea id="inputBox" rows="1" placeholder="Ask anything..."
-          class="w-full resize-none p-3 rounded-lg bg-[#1f1f1f] border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all"></textarea>
-        <button id="sendBtn" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">Send</button>
-      </div>
-    </div>
-
-    <script>
-      const chatBox = document.getElementById('chatBox');
-      const inputBox = document.getElementById('inputBox');
-      const sendBtn = document.getElementById('sendBtn');
-      const status = document.getElementById('status');
-      const toggleTheme = document.getElementById('toggleTheme');
-
-      let currentTheme = 'dark';
-      toggleTheme.onclick = () => {
-        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-        document.body.classList.toggle('bg-dark');
-        document.body.classList.toggle('bg-white');
-        document.body.classList.toggle('text-white');
-        document.body.classList.toggle('text-black');
-      };
-
-      inputBox.addEventListener('input', () => {
-        inputBox.style.height = 'auto';
-        inputBox.style.height = inputBox.scrollHeight + 'px';
+    async function getChatReply(message) {
+      const data = await fetchAI('chat/completions', {
+        model: 'provider-6/gpt-4o',
+        messages: [{ role: 'user', content: message }]
       });
+      return data?.choices?.[0]?.message?.content || 'No response';
+    }
 
-      function scrollToBottom() {
-        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const msg = input.value.trim();
+      if (!msg) return;
+      addMessage(msg, 'user');
+      input.value = '';
+      const reply = await getChatReply(msg);
+      addMessage(reply, 'bot');
+    });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        form.dispatchEvent(new Event('submit'));
       }
-
-      function createBubble(message, from = 'user') {
-        const bubble = document.createElement('div');
-        bubble.className = `bubble max-w-[90%] w-fit rounded-xl px-4 py-3 whitespace-pre-wrap break-words ${
-          from === 'user' ? 'bg-primary self-end text-white' : 'bg-surface self-start text-gray-100'
-        }`;
-        bubble.innerText = message;
-        chatBox.appendChild(bubble);
-        scrollToBottom();
-        return bubble;
-      }
-
-      async function sendPrompt() {
-        const prompt = inputBox.value.trim();
-        if (!prompt) return;
-
-        inputBox.value = '';
-        inputBox.style.height = 'auto';
-
-        createBubble(prompt, 'user');
-
-        const botBubble = createBubble('Typing |', 'bot');
-        let dots = 0;
-        const typingInterval = setInterval(() => {
-          dots = (dots + 1) % 4;
-          botBubble.innerText = 'Typing' + '.'.repeat(dots);
-        }, 300);
-
-        try {
-          const res = await fetch("https://steveai-production.up.railway.app/chat", {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: prompt })
-          });
-
-          const data = await res.json();
-          clearInterval(typingInterval);
-
-          // ✅ Updated to use 'data.content' instead of 'data.response'
-          botBubble.innerText = data.content || 'Error: No response';
-
-          const speakBtn = document.createElement('button');
-          speakBtn.textContent = '🔊';
-          speakBtn.className = 'ml-2 text-orange-400 hover:text-orange-300';
-          speakBtn.onclick = () => {
-            const utter = new SpeechSynthesisUtterance(botBubble.innerText);
-            speechSynthesis.speak(utter);
-          };
-
-          const refreshBtn = document.createElement('button');
-          refreshBtn.textContent = '↻';
-          refreshBtn.className = 'ml-2 text-orange-400 hover:text-orange-300';
-          refreshBtn.onclick = () => {
-            inputBox.value = prompt;
-            sendPrompt();
-          };
-
-          const btnRow = document.createElement('div');
-          btnRow.className = 'flex justify-end gap-2 mt-1';
-          btnRow.appendChild(speakBtn);
-          btnRow.appendChild(refreshBtn);
-          botBubble.appendChild(btnRow);
-        } catch (err) {
-          clearInterval(typingInterval);
-          botBubble.innerText = 'Error connecting to server.';
-        }
-      }
-
-      sendBtn.onclick = sendPrompt;
-      inputBox.addEventListener('keypress', e => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          sendPrompt();
-        }
-      });
-
-      function updateStatus() {
-        status.textContent = navigator.onLine ? '🟢 Online' : '🔌 Offline';
-      }
-      window.addEventListener('online', updateStatus);
-      window.addEventListener('offline', updateStatus);
-      updateStatus();
-    </script>
-  </body>
+    });
+  </script>
+</body>
 </html>
