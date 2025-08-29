@@ -23,10 +23,8 @@
   </div>
 </div>
 
-<!-- Chat Area -->
 <div id="chat" class="transparent-chat"></div>
 
-<!-- Input Area -->
 <div id="inputContainer">
   <form id="inputForm">
     <textarea id="messageInput" placeholder="Type your message..." rows="1" required></textarea>
@@ -34,18 +32,7 @@
   </form>
 </div>
 
-<!-- Markdown parser and script -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="index.js"></script>
-
-<script>
-// Auto-resize textarea
-const input = document.getElementById('messageInput');
-input.addEventListener('input', () => {
-  input.style.height = 'auto';
-  input.style.height = input.scrollHeight + 'px';
-});
-</script>
-
 </body>
 </html>
