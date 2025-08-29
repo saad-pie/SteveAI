@@ -8,7 +8,6 @@
 </head>
 <body>
 
-<!-- Header -->
 <div id="header">
   <div class="logo">
     <div class="logo-icon">
@@ -25,17 +24,17 @@
 </div>
 
 <!-- Chat Area -->
-<div id="chat"></div>
+<div id="chat" class="transparent-chat"></div>
 
 <!-- Input Area -->
 <div id="inputContainer">
   <form id="inputForm">
-    <textarea id="messageInput" placeholder="Type your message... (Shift+Enter for new line)" rows="1" required></textarea>
+    <textarea id="messageInput" placeholder="Type your message..." rows="1" required></textarea>
     <button type="submit" id="sendBtn" title="Send Message">↑</button>
   </form>
 </div>
 
-<!-- Add Markdown parser -->
+<!-- Markdown parser and script -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="index.js"></script>
 
@@ -46,12 +45,6 @@ input.addEventListener('input', () => {
   input.style.height = 'auto';
   input.style.height = input.scrollHeight + 'px';
 });
-
-// Optional: scroll chat to bottom on new message
-function scrollToBottom() {
-  const chat = document.getElementById('chat');
-  chat.scrollTop = chat.scrollHeight;
-}
 </script>
 
 </body>
