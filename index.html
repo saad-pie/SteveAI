@@ -8,16 +8,31 @@
 </head>
 <body>
 
-<div id="header">STEVEAI</div>
+<!-- Header -->
+<div id="header">
+  <div class="logo">
+    <div class="logo-icon">S</div>
+    <span>SteveAI</span>
+  </div>
+  <div class="header-actions">
+    <button id="clearChat" title="Clear Chat">
+      <span>🗑️</span>
+      <span>Clear</span>
+    </button>
+    <button id="themeToggle" title="Toggle Theme">🌙</button>
+  </div>
+</div>
 
+<!-- Chat Area -->
 <div id="chat"></div>
 
-<form id="inputForm">
-  <textarea id="messageInput" placeholder="Type your message..." rows="1" required></textarea>
-  <button type="submit" id="sendBtn">↑</button>
-</form>
-
-<button id="floatTheme">☀️</button>
+<!-- Input Area -->
+<div id="inputContainer">
+  <form id="inputForm">
+    <textarea id="messageInput" placeholder="Type your message... (Shift+Enter for new line)" rows="1" required></textarea>
+    <button type="submit" id="sendBtn" title="Send Message">↗</button>
+  </form>
+</div>
 
 <!-- Add Markdown parser -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
