@@ -18,13 +18,15 @@
     <span>SteveAI</span>
   </div>
   <div class="header-actions">
-    <button id="clearChat" class="action-btn" title="Clear Chat">🗑️ Clear</button>
+    <button id="clearChat" class="action-btn" title="Clear Chat">🗑️</button>
     <button id="themeToggle" class="action-btn" title="Toggle Theme">🌙</button>
   </div>
 </div>
 
-<div id="chat" class="transparent-chat"></div>
+<!-- Chat Area -->
+<div id="chat"></div>
 
+<!-- Input Area -->
 <div id="inputContainer">
   <form id="inputForm">
     <textarea id="messageInput" placeholder="Type your message..." rows="1" required></textarea>
@@ -32,7 +34,9 @@
   </form>
 </div>
 
+<!-- Markdown parser -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="index.js"></script>
+
 </body>
 </html>
