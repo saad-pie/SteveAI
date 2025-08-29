@@ -93,3 +93,28 @@ body.light #messageInput { background:rgba(248,244,255,0.8); color:#4a3c6a; bord
 
 #sendBtn { width:50px;height:50px;border-radius:50%;border:none;background:linear-gradient(45deg,#2ecc71,#27ae60); color:white; font-size:20px; cursor:pointer; }
 body.light #sendBtn { background:linear-gradient(45deg,#8a2be2,#9370db); }
+/* --- Message Actions Buttons --- */
+.message-actions {
+  display:flex; gap:6px; margin-top:6px;
+  position:absolute; bottom:-28px; right:0;
+  opacity:0; transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.message-container:hover .message-actions {
+  opacity:1;
+  transform: translateY(0);
+}
+
+/* --- Action buttons style (emoji only) --- */
+.action-btn {
+  background: rgba(255,255,255,0.1);
+  border:none; color:#000;
+  border-radius:50%; width:28px; height:28px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:16px;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.action-btn:hover { background: rgba(255,255,255,0.2); transform:scale(1.1); }
+
