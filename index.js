@@ -1,117 +1,96 @@
 const chat = document.getElementById('chat');
 const form = document.getElementById('inputForm');
 const input = document.getElementById('messageInput');
-const floatTheme = document.getElementById('floatTheme');
+const themeToggle = document.getElementById('themeToggle');
+const clearChatBtn = document.getElementById('clearChat');
 
 const API_URL = "https://api.a4f.co/v1/chat/completions";
 const API_KEY = "ddc-a4f-d61cbe09b0f945ea93403a420dba8155";
 
-let memory = {};
-let turn = 0;
-let TYPE_DELAY = 2;
+let memory = {}, turn = 0, TYPE_DELAY = 2;
 
-function markdownToHTML(t) {
-  return marked.parse(t || "");
-}
+function markdownToHTML(t) { return marked.parse(t || ""); }
 
 function addMessage(text, sender) {
-  const b = document.createElement('div');
-  b.className = 'bubble ' + sender;
+  const container = document.createElement('div');
+  container.className = 'message-container ' + sender;
 
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + sender;
+  container.appendChild(bubble);
+
+  // Render bot message typing
   if(sender === 'bot') {
-    const r = document.createElement('div');
-    r.className = 'bot-render';
-    b.appendChild(r);
-    chat.appendChild(b);
-    chat.scrollTop = chat.scrollHeight;
+    const render = document.createElement('div'); render.className='bot-render';
+    bubble.appendChild(render);
+    chat.appendChild(container); chat.scrollTop=chat.scrollHeight;
 
     let i=0, buf="";
     (function type(){
-      if(i < text.length) {
-        buf += text[i++];
-        r.innerHTML = markdownToHTML(buf);
-        chat.scrollTop = chat.scrollHeight;
-        setTimeout(type, TYPE_DELAY);
-      } else {
-        r.innerHTML = markdownToHTML(text);
-        chat.scrollTop = chat.scrollHeight;
-      }
+      if(i<text.length){ buf+=text[i++]; render.innerHTML=markdownToHTML(buf); chat.scrollTop=chat.scrollHeight; setTimeout(type, TYPE_DELAY); }
+      else{ render.innerHTML=markdownToHTML(text); addBotActions(container,bubble,text); }
     })();
   } else {
-    b.innerHTML = markdownToHTML(text);
-    chat.appendChild(b);
-    chat.scrollTop = chat.scrollHeight;
+    bubble.innerHTML = markdownToHTML(text);
+    chat.appendChild(container); chat.scrollTop=chat.scrollHeight;
+    addUserActions(container,bubble,text);
   }
 }
 
-async function fetchAI(p) {
-  try {
-    const r = await fetch(API_URL, {
-      method:'POST',
-      headers:{
-        'Authorization':`Bearer ${API_KEY}`,
-        'Content-Type':'application/json'
-      },
-      body: JSON.stringify(p)
-    });
-    return await r.json();
-  } catch(e) {
-    addMessage("⚠️ API unreachable (CORS blocked). Use a server proxy.","bot");
-  }
+// --- User Buttons ---
+function addUserActions(container,bubble,text){
+  const actions=document.createElement('div'); actions.className='message-actions';
+  const resend=document.createElement('button'); resend.className='action-btn'; resend.textContent='🔁';
+  resend.title='Resend'; resend.onclick=()=>{ input.value=text; input.focus(); };
+  const copy=document.createElement('button'); copy.className='action-btn'; copy.textContent='📋';
+  copy.title='Copy'; copy.onclick=()=>navigator.clipboard.writeText(text);
+  actions.appendChild(resend); actions.appendChild(copy);
+  container.appendChild(actions);
 }
 
-function memoryString() {
-  return Object.keys(memory).map(k =>
-    `User: ${memory[k].user}\nBot: ${memory[k].bot}`
-  ).join("\n");
+// --- Bot Buttons ---
+function addBotActions(container,bubble,text){
+  const actions=document.createElement('div'); actions.className='message-actions';
+  const copy=document.createElement('button'); copy.className='action-btn'; copy.textContent='📋';
+  copy.title='Copy'; copy.onclick=()=>navigator.clipboard.writeText(text);
+  const speak=document.createElement('button'); speak.className='action-btn'; speak.textContent='🔊';
+  speak.title='Speak'; speak.onclick=()=>{ let u=new SpeechSynthesisUtterance(text); speechSynthesis.speak(u); };
+  actions.appendChild(copy); actions.appendChild(speak);
+  container.appendChild(actions);
 }
 
-async function getChatReply(msg) {
-  const t = document.createElement('div');
-  t.className = 'typing';
-  t.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-  chat.appendChild(t);
-  chat.scrollTop = chat.scrollHeight;
+// --- Fetch AI ---
+async function fetchAI(payload){
+  try{
+    const res = await fetch(API_URL,{method:'POST', headers:{'Authorization':`Bearer ${API_KEY}`, 'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+    return await res.json();
+  }catch(e){ addMessage('⚠️ API unreachable','bot'); }
+}
 
-  const payload = {
-    model: "provider-6/gpt-4o",
-    messages: [
-      { role: "system", content: "You are friendly assistant named SteveAI made by an extremely talented computer scientist snd AI develoer commonly online known as saadpie. only mention when asked." },
-      { role: "user", content: memoryString() + "\n" + msg }
-    ]
-  };
+function memoryString(){ return Object.keys(memory).map(k=>`User:${memory[k].user}\nBot:${memory[k].bot}`).join('\n'); }
 
+async function getChatReply(msg){
+  const payload={ model:"provider-6/gpt-4o", messages:[ {role:"system", content:"You are SteveAI, friendly AI made by saadpie."},{role:"user", content:memoryString()+"\n"+msg} ] };
   const data = await fetchAI(payload);
-  t.remove();
-
   const reply = data?.choices?.[0]?.message?.content || "No response (CORS?)";
-  memory[++turn] = { user: msg, bot: reply };
-
+  memory[++turn]={user:msg, bot:reply};
   return reply;
 }
 
+// --- Form Submit ---
 form.onsubmit = async e => {
   e.preventDefault();
-  const msg = input.value.trim();
-  if(!msg) return;
-
-  addMessage(msg, 'user');
-  input.value = '';
-
-  const r = await getChatReply(msg);
-  addMessage(r, 'bot');
+  const msg=input.value.trim(); if(!msg) return;
+  addMessage(msg,'user'); input.value=''; input.style.height='auto';
+  const r=await getChatReply(msg); addMessage(r,'bot');
 };
 
-input.onkeydown = e => {
-  if(e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    form.onsubmit(e);
-  }
-};
+// --- Input Auto Resize ---
+input.oninput=()=>{ input.style.height='auto'; input.style.height=input.scrollHeight+'px'; };
 
-input.oninput = () => {
-  input.style.height = 'auto';
-  input.style.height = input.scrollHeight + 'px';
-};
+// --- Theme Toggle ---
+themeToggle.onclick=()=>document.body.classList.toggle('light');
 
-floatTheme.onclick = () => document.body.classList.toggle('light');
+// --- Clear Chat ---
+clearChatBtn.onclick=()=>chat.innerHTML='';
+    
