@@ -127,7 +127,7 @@ function memoryString() {
 // --- Get AI reply ---
 async function getChatReply(msg) {
     const payload = {
-        model: "provider-6/gpt-4o",
+        model: "provider-3/gpt-4",
         messages: [
             { role: "system", content: "You are SteveAI, friendly AI made by saadpie." },
             { role: "user", content: memoryString() + "\n" + msg }
