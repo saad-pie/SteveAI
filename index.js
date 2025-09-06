@@ -28,7 +28,17 @@ function proxiedURL(base, proxy) {
     return proxy + base;
 }
 
-let memory = {}, turn = 0, TYPE_DELAY = 2;
+// --- Memory ---
+let memory = {};
+let summary = "Conversation so far: None.";   // NEW
+let turn = 0, TYPE_DELAY = 2;
+const MAX_TURNS = 6;                          // NEW
+const TOKEN_THRESHOLD = 600;                  // NEW
+
+// --- Rough token counter --- // NEW
+function tokenCount(text) {
+    return Math.ceil(text.split(/\s+/).length * 1.3);
+}
 
 // Convert Markdown to HTML
 function markdownToHTML(t) { 
@@ -150,18 +160,44 @@ function memoryString() {
         .join('\n');
 }
 
+// --- Summarize memory when needed --- // NEW
+async function updateSummary() {
+    const convo = memoryString();
+    const payload = {
+        model: "provider-3/gpt-4",
+        messages: [
+            { role: "system", content: "Summarize the following conversation briefly, keeping key details about user intent and important facts." },
+            { role: "user", content: convo }
+        ]
+    };
+    const data = await fetchAI(payload);
+    const sum = data?.choices?.[0]?.message?.content || "";
+    summary = "Conversation so far: " + sum;
+    memory = {};
+    turn = 0;
+}
+
 // --- Get AI reply ---
 async function getChatReply(msg) {
+    const convo = memoryString();
     const payload = {
         model: "provider-3/gpt-4",
         messages: [
             { role: "system", content: "You are SteveAI, friendly AI made by saadpie." },
-            { role: "user", content: memoryString() + "\n" + msg }
+            { role: "system", content: summary },
+            { role: "user", content: convo + "\n" + msg }
         ]
     };
     const data = await fetchAI(payload);
     const reply = data?.choices?.[0]?.message?.content || "No response (CORS?)";
+
     memory[++turn] = { user: msg, bot: reply };
+
+    // Gear shift if memory too big
+    if (turn > MAX_TURNS || tokenCount(convo) > TOKEN_THRESHOLD) {
+        await updateSummary();
+    }
+
     return reply;
 }
 
@@ -178,10 +214,14 @@ form.onsubmit = async e => {
 };
 
 // --- Input Auto Resize ---
-input.oninput = () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; };
+input.oninput = () => { 
+    input.style.height = 'auto'; 
+    input.style.height = input.scrollHeight + 'px'; 
+};
 
 // --- Theme Toggle ---
 themeToggle.onclick = () => document.body.classList.toggle('light');
 
 // --- Clear Chat ---
 clearChatBtn.onclick = () => chat.innerHTML = '';
+        
