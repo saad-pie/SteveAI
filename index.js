@@ -4,8 +4,29 @@ const input = document.getElementById('messageInput');
 const themeToggle = document.getElementById('themeToggle');
 const clearChatBtn = document.getElementById('clearChat');
 
-const API_URL = "https://api.a4f.co/v1/chat/completions";
-const API_KEY = "ddc-a4f-d61cbe09b0f945ea93403a420dba8155";
+// --- API Config ---
+const API_BASE = "https://api.a4f.co/v1/chat/completions";
+
+// Two API keys as fallback
+const API_KEYS = [
+    "ddc-a4f-d61cbe09b0f945ea93403a420dba8155",
+    "ddc-a4f-93af1cce14774a6f831d244f4df3eb9e"
+];
+
+// Proxies for CORS bypass
+const PROXIES = [
+    "https://cors-anywhere.herokuapp.com/",
+    "https://thingproxy.freeboard.io/fetch/",
+    "https://api.allorigins.win/raw?url="
+];
+
+// Build proxied URL
+function proxiedURL(base, proxy) {
+    if (proxy.includes("allorigins")) {
+        return proxy + encodeURIComponent(base);
+    }
+    return proxy + base;
+}
 
 let memory = {}, turn = 0, TYPE_DELAY = 2;
 
@@ -23,12 +44,10 @@ function addMessage(text, sender) {
     bubble.className = 'bubble ' + sender;
     container.appendChild(bubble);
 
-    // Create a content wrapper for proper Markdown rendering
     const content = document.createElement('div');
     content.className = 'bubble-content';
     bubble.appendChild(content);
 
-    // Bot typing animation
     if(sender === 'bot') {
         chat.appendChild(container);
         chat.scrollTop = chat.scrollHeight;
@@ -100,21 +119,28 @@ function addBotActions(container, bubble, text) {
     container.appendChild(actions);
 }
 
-// --- Fetch AI ---
+// --- Fetch AI with proxy & key fallback ---
 async function fetchAI(payload) {
-    try {
-        const res = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload)
-        });
-        return await res.json();
-    } catch(e) {
-        addMessage('⚠️ API unreachable', 'bot');
+    for (let key of API_KEYS) {
+        for (let proxy of PROXIES) {
+            try {
+                const res = await fetch(proxiedURL(API_BASE, proxy), {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${key}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    return await res.json();
+                }
+            } catch (e) {
+                console.warn(`Failed with key ${key} via proxy ${proxy}`, e);
+            }
+        }
     }
+    addMessage('⚠️ API unreachable (all keys/proxies failed)', 'bot');
 }
 
 // --- Memory string ---
@@ -159,4 +185,3 @@ themeToggle.onclick = () => document.body.classList.toggle('light');
 
 // --- Clear Chat ---
 clearChatBtn.onclick = () => chat.innerHTML = '';
-      
