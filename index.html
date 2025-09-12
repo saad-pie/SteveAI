@@ -39,5 +39,25 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="index.js"></script>
 
+<!-- Auto-adjust chat padding -->
+<script>
+  function adjustChatPadding() {
+    const chat = document.getElementById("chat");
+    const inputContainer = document.getElementById("inputContainer");
+    if (chat && inputContainer) {
+      chat.style.paddingBottom = inputContainer.offsetHeight + 20 + "px";
+    }
+  }
+
+  window.addEventListener("load", adjustChatPadding);
+  window.addEventListener("resize", adjustChatPadding);
+
+  const inputContainer = document.getElementById("inputContainer");
+  if (inputContainer) {
+    const observer = new ResizeObserver(adjustChatPadding);
+    observer.observe(inputContainer);
+  }
+</script>
+
 </body>
 </html>
