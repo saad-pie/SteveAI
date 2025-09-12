@@ -302,7 +302,7 @@ body.light .bot-dot {
 /* --- Input Area --- */
 #inputContainer {
   position: fixed;
-  bottom: 0;
+  bottom: 45;
   left: 0;
   width: 100%;
   background: rgba(10, 10, 10, 0.9);
