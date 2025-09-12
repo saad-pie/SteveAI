@@ -73,9 +73,9 @@ body.light .logo {
 /* --- Chat --- */
 #chat {
   flex: 1;
-  margin-top: 70px;
-  margin-bottom: 70px;
+  margin-top: 70px;           /* space for header */
   padding: 16px 24px;
+  padding-bottom: 120px;      /* reserve space for input bar */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -83,6 +83,7 @@ body.light .logo {
   scroll-behavior: smooth;
   background: transparent;
 }
+
 
 #chat::-webkit-scrollbar {
   width: 6px;
