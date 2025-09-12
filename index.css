@@ -76,6 +76,7 @@ body.light .logo {
   margin-top: 70px;
   margin-bottom: 70px;
   padding: 16px 24px;
+  padding-bottom: 110px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
