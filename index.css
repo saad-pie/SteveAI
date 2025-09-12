@@ -73,6 +73,7 @@ body.light .logo {
 /* --- Chat --- */
 #chat {
   flex: 1;
+  padding-bottom: 80px;
   margin-top: 70px;
   margin-bottom: 70px;
   padding: 16px 24px;
