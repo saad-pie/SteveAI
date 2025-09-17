@@ -212,7 +212,7 @@ async function fetchAI(payload) {
 async function getChatReply(msg) {
   const context = await buildContext();
   const payload = {
-    model: "provider-3/gpt-4",
+    model: "provider-3/gpt-5-nano",
     messages: [
       { role: "system", content: "You are SteveAI, a helpful, concise assistant made by saadpie. Prefer direct answers with minimal fluff." },
       { role: "user", content: `${context}\n\nUser: ${msg}` }
