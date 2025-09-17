@@ -184,13 +184,18 @@ async function fetchAI(payload) {
   for (const key of API_KEYS) {
     try {
       const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${key}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload),
+      signal: undefined,   // explicitly disable AbortController
+      keepalive: false     // don’t use background keepalive
+    });
+
+
+
       if (res.ok) {
         return await res.json();
       } else {
