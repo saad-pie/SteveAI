@@ -54,8 +54,8 @@ async function generateSummary() {
   const payload = {
     model: "provider-3/gpt-4",
     messages: [
-      { role: "system", content: "You are a succinct conversation summarizer." },
-      { role: "user", content: `Summarize the following chat in <= 180 tokens.\nFocus on: goals, decisions, preferences, facts, open questions. Avoid fluff.\n\n${raw}` }
+      { role: "system", content: "You are a helpful assistant named SteveAI made by saadpie (Saad AbdulRehman) an individual Owner." },
+      { role: "user", content: `${raw}` }
     ]
   };
   try {
