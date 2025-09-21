@@ -7,10 +7,24 @@
     <priority>1.0</priority>
   </url>
 
+  <!-- About page -->
+  <url>
+    <loc>https://steve-ai.netlify.app/about.html</loc>
+    <lastmod>2025-09-21</lastmod>
+    <priority>0.7</priority>
+  </url>
+
   <!-- Docs page -->
   <url>
-    <loc>https://steve-ai.netlify.app/docs</loc>
+    <loc>https://steve-ai.netlify.app/docs.html</loc>
     <lastmod>2025-09-21</lastmod>
     <priority>0.8</priority>
+  </url>
+
+  <!-- Chat page -->
+  <url>
+    <loc>https://steve-ai.netlify.app/chat.html</loc>
+    <lastmod>2025-09-21</lastmod>
+    <priority>0.9</priority>
   </url>
 </urlset>
