@@ -1,11 +1,15 @@
+// --- DOM Elements ---
 const chat = document.getElementById('chat');
 const form = document.getElementById('inputForm');
 const input = document.getElementById('messageInput');
 const themeToggle = document.getElementById('themeToggle');
 const clearChatBtn = document.getElementById('clearChat');
+const modeSelect = document.getElementById('modeSelect'); // optional dropdown: "chat" | "reasoning"
 
 // --- API Config ---
 const API_BASE = "https://api.a4f.co/v1/chat/completions";
+const PROXY = "https://corsproxy.io/?url=";
+const proxiedURL = (base) => PROXY + encodeURIComponent(base);
 
 // Two API keys as fallback
 const API_KEYS = [
@@ -13,87 +17,69 @@ const API_KEYS = [
   "ddc-a4f-93af1cce14774a6f831d244f4df3eb9e"
 ];
 
-// Single proxy that supports POST + Authorization
-const PROXY = "https://corsproxy.io/?url=";
-const proxiedURL = (base) => PROXY + encodeURIComponent(base);
-
 // --- Memory / Summary ---
-let memory = {};          // { turnNumber: { user, bot } }
-let turn = 0;             // turn counter
-let memorySummary = "";   // compact summary after we "shift gears"
+let memory = {};
+let turn = 0;
+let memorySummary = "";
 const TYPE_DELAY = 2;
-
-// soft token budget (super rough est: ~4 chars per token)
 const TOKEN_BUDGET = 2200;
-const approxTokens = (s) => Math.ceil((s || "").length / 4);
+const approxTokens = s => Math.ceil((s || "").length / 4);
 
-// Build full memory string (raw)
+// --- Helpers ---
 function memoryString() {
   return Object.keys(memory)
     .map(k => `User: ${memory[k].user}\nBot: ${memory[k].bot}`)
     .join('\n');
 }
 
-// Last N turns only
 function lastTurns(n = 6) {
   const keys = Object.keys(memory).map(Number).sort((a,b)=>a-b);
-  const slice = keys.slice(-n);
-  return slice.map(k => `User: ${memory[k].user}\nBot: ${memory[k].bot}`).join('\n');
+  return keys.slice(-n).map(k => `User: ${memory[k].user}\nBot: ${memory[k].bot}`).join('\n');
 }
 
-// Should we switch to summary mode?
 function shouldSummarize() {
-  if (memorySummary) return false; // already summarized
-  const raw = memoryString();
-  return turn >= 6 || approxTokens(raw) > TOKEN_BUDGET;
+  if (memorySummary) return false;
+  return turn >= 6 || approxTokens(memoryString()) > TOKEN_BUDGET;
 }
 
-// Ask model to summarize the convo (fallback to naive on failure)
+// --- Summarization ---
 async function generateSummary() {
   const raw = memoryString();
   const payload = {
     model: "provider-3/gpt-4",
     messages: [
-      { role: "system", content: "You are a helpful assistant named SteveAI made by saadpie (Saad AbdulRehman) an individual Owner." },
-      { role: "user", content: `${raw}` }
+      { role: "system", content: "You are SteveAI, made by saadpie. Summarize the following chat context clearly." },
+      { role: "user", content: raw }
     ]
   };
   try {
     const data = await fetchAI(payload);
-    const sum = data?.choices?.[0]?.message?.content?.trim();
-    return sum || "";
-  } catch (e) {
-    console.warn("Summarization failed, using naive fallback", e);
-    // naive fallback: keep only last 2 turns as a pseudo-summary
-    return "Conversation so far: " + lastTurns(2).replace(/\n/g, " ").slice(0, 800);
+    return data?.choices?.[0]?.message?.content?.trim() || "";
+  } catch {
+    return "Summary: " + lastTurns(2).replace(/\n/g, " ").slice(0, 800);
   }
 }
 
-// Build context to send with each user message
 async function buildContext() {
   if (shouldSummarize()) {
     const sum = await generateSummary();
     if (sum) {
       memorySummary = sum;
-      // After summarizing, we can trim raw memory to just a few most recent turns
       const keep = {};
       const keys = Object.keys(memory).map(Number).sort((a,b)=>a-b).slice(-4);
       keys.forEach(k => keep[k] = memory[k]);
       memory = keep;
     }
   }
-  if (memorySummary) {
-    return `[SESSION SUMMARY]\n${memorySummary}\n\n[RECENT TURNS]\n${lastTurns(6)}`;
-  }
-  return memoryString();
+  return memorySummary
+    ? `[SESSION SUMMARY]\n${memorySummary}\n\n[RECENT TURNS]\n${lastTurns(6)}`
+    : memoryString();
 }
 
-// --- Markdown to HTML ---
-function markdownToHTML(t) { 
-  return marked.parse(t || ""); 
-}
+// --- Markdown Parser ---
+function markdownToHTML(t) { return marked.parse(t || ""); }
 
-// --- UI: Add message bubble ---
+// --- UI: Add Messages ---
 function addMessage(text, sender) {
   const container = document.createElement('div');
   container.className = 'message-container ' + sender;
@@ -110,7 +96,7 @@ function addMessage(text, sender) {
     chat.appendChild(container);
     chat.scrollTop = chat.scrollHeight;
 
-    let i=0, buf="";
+    let i = 0, buf = "";
     (function type() {
       if (i < text.length) {
         buf += text[i++];
@@ -130,7 +116,7 @@ function addMessage(text, sender) {
   }
 }
 
-// --- UI: User bubble actions ---
+// --- Message Actions ---
 function addUserActions(container, bubble, text) {
   const actions = document.createElement('div');
   actions.className = 'message-actions';
@@ -152,7 +138,6 @@ function addUserActions(container, bubble, text) {
   container.appendChild(actions);
 }
 
-// --- UI: Bot bubble actions ---
 function addBotActions(container, bubble, text) {
   const actions = document.createElement('div');
   actions.className = 'message-actions';
@@ -177,54 +162,62 @@ function addBotActions(container, bubble, text) {
   container.appendChild(actions);
 }
 
-// --- Fetch AI (tries both keys via corsproxy.io) ---
+// --- Fetch AI ---
 async function fetchAI(payload) {
   const url = proxiedURL(API_BASE);
   let lastErrText = "";
   for (const key of API_KEYS) {
     try {
       const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${key}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload),
-      signal: undefined,   // explicitly disable AbortController
-      keepalive: false     // don’t use background keepalive
-    });
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${key}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
 
-
-
-      if (res.ok) {
-        return await res.json();
-      } else {
-        const txt = await res.text().catch(()=> "");
-        lastErrText = `HTTP ${res.status} ${res.statusText} ${txt}`;
-        console.warn(`A4F error with key ${key}:`, lastErrText);
-        // try next key
-      }
+      if (res.ok) return await res.json();
+      lastErrText = await res.text();
     } catch (e) {
-      console.warn(`Network/proxy error with key ${key}:`, e);
-      // try next key
+      console.warn("Proxy/network error", e);
     }
   }
-  addMessage('⚠️ API unreachable (both keys via proxy failed). Check CORS/proxy status or rotate keys.', 'bot');
-  throw new Error(lastErrText || "All attempts failed");
+  addMessage('⚠️ API unreachable. Check keys or proxy.', 'bot');
+  throw new Error(lastErrText || "API error");
 }
 
-// --- Chat flow ---
+// --- Chat Flow ---
 async function getChatReply(msg) {
   const context = await buildContext();
+
+  // detect mode (default: chat)
+  const mode = (modeSelect?.value || 'chat').toLowerCase();
+
+  // Select model and name dynamically
+  const model =
+    mode === 'reasoning'
+      ? "provider-1/deepseek-v3-0324-turbo"
+      : "provider-3/gpt-5-nano";
+
+  const botName = mode === 'reasoning' ? "SteveAI-reasoning" : "SteveAI-chat";
+
   const payload = {
-    model: "provider-3/gpt-5-nano",
+    model,
     messages: [
-      { role: "system", content: "You are SteveAI, a helpful, concise assistant made by saadpie. Prefer direct answers with minimal fluff." },
-      { role: "user", content: `${context}\n\nUser: ${msg}` }
+      {
+        role: "system",
+        content: `You are ${botName}, a helpful assistant made by saadpie. Be clear, concise, and smart.`
+      },
+      {
+        role: "user",
+        content: `${context}\n\nUser: ${msg}`
+      }
     ]
   };
+
   const data = await fetchAI(payload);
-  const reply = data?.choices?.[0]?.message?.content || "No response (CORS?)";
+  const reply = data?.choices?.[0]?.message?.content || "No response.";
   memory[++turn] = { user: msg, bot: reply };
   return reply;
 }
@@ -240,15 +233,15 @@ form.onsubmit = async e => {
   try {
     const r = await getChatReply(msg);
     addMessage(r, 'bot');
-  } catch (e) {
-    addMessage('⚠️ Request failed. See console for details.', 'bot');
+  } catch {
+    addMessage('⚠️ Request failed. Check console.', 'bot');
   }
 };
 
 // --- Input Auto Resize ---
-input.oninput = () => { 
-  input.style.height = 'auto'; 
-  input.style.height = input.scrollHeight + 'px'; 
+input.oninput = () => {
+  input.style.height = 'auto';
+  input.style.height = input.scrollHeight + 'px';
 };
 
 // --- Theme Toggle ---
@@ -262,3 +255,4 @@ clearChatBtn.onclick = () => {
   turn = 0;
   addMessage('🧹 Chat cleared.', 'bot');
 };
+  
