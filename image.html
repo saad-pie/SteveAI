@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI Image Generator - SteveAI" />
+  <meta name="author" content="SteveAI by saadpie" />
+  <meta name="theme-color" content="#111" />
+  <title>SteveAI – Image Generator</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="/assets/favicon.png" />
+
+  <!-- Basic Styling -->
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+    }
+    header {
+      background: #111;
+      padding: 1em;
+      display: flex;
+      justify-content: center;
+      gap: 1.5em;
+      font-weight: 600;
+    }
+    header a {
+      color: #ffae00;
+      text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    header a:hover {
+      opacity: 0.7;
+    }
+    main {
+      padding: 2em;
+    }
+    input, button {
+      border: none;
+      padding: 0.7em 1em;
+      border-radius: 0.5em;
+      font-size: 1em;
+    }
+    input {
+      width: 60%;
+      margin-bottom: 1em;
+    }
+    button {
+      background: #ffae00;
+      color: #111;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover {
+      background: #ffc107;
+    }
+    #result img {
+      margin-top: 2em;
+      max-width: 90%;
+      border-radius: 1em;
+      box-shadow: 0 0 20px rgba(255, 174, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="/">Home</a>
+    <a href="/about.html">About</a>
+    <a href="/docs.html">Docs</a>
+    <a href="/chat.html">Chat</a>
+    <a href="/image.html">Image</a>
+  </header>
+
+  <main>
+    <h1>🖼️ SteveAI Image Generator</h1>
+    <p>Enter a prompt below to generate an AI image.</p>
+    <input type="text" id="prompt" placeholder="e.g. A cute baby sea otter" />
+    <br />
+    <button id="generateBtn">Generate</button>
+    <div id="result"></div>
+  </main>
+
+  <script type="module">
+    import OpenAI from "https://esm.sh/openai";
+
+    const client = new OpenAI({
+      apiKey: "ddc-a4f-d61cbe09b0f945ea93403a420dba8155",
+      baseURL: "https://api.a4f.co/v1",
+      dangerouslyAllowBrowser: true // allows direct browser use
+    });
+
+    const generateBtn = document.getElementById("generateBtn");
+    const promptInput = document.getElementById("prompt");
+    const resultDiv = document.getElementById("result");
+
+    generateBtn.addEventListener("click", async () => {
+      const prompt = promptInput.value.trim();
+      if (!prompt) return alert("Please enter a prompt!");
+
+      resultDiv.innerHTML = "<p>Generating...</p>";
+
+      try {
+        const response = await client.images.generate({
+          model: "provider-4/imagen-4",
+          prompt,
+          n: 1,
+          size: "1024x1024"
+        });
+
+        const imageUrl = response.data[0].url;
+        resultDiv.innerHTML = `
+          <img src="${imageUrl}" alt="Generated Image">
+          <p><a href="${imageUrl}" target="_blank">Open in new tab</a></p>
+        `;
+      } catch (err) {
+        console.error(err);
+        resultDiv.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
