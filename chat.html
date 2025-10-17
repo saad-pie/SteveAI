@@ -14,7 +14,7 @@
   <meta property="og:title" content="SteveAI - Smart AI Assistant">
   <meta property="og:description" content="Chat with SteveAI: a smart AI assistant for learning, productivity, and creativity.">
   <meta property="og:image" content="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s">
-  <meta property="og:url" content="https://steve-ai.netlify.app/chat.html">
+  <meta property="og:url" content="https://steve-ai.netlify.app/">
   <meta property="og:type" content="website">
 
   <!-- Twitter Card -->
@@ -27,7 +27,7 @@
   <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s" type="image/png">
 
   <!-- Canonical URL -->
-  <link rel="canonical" href="https://steve-ai.netlify.app/chat.html">
+  <link rel="canonical" href="https://steve-ai.netlify.app/">
 
   <!-- Robots -->
   <meta name="robots" content="index, follow">
@@ -40,20 +40,20 @@
   {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    "name": "SteveAI Chat",
-    "url": "https://steve-ai.netlify.app/chat.html",
+    "name": "SteveAI",
+    "url": "https://steve-ai.netlify.app/",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s",
     "author": {
-      "@type": "Person",
-      "name": "saadpie"
+      "@type": "Organization",
+      "name": "SteveAI"
     },
     "applicationCategory": "AI Assistant",
     "operatingSystem": "Web Browser",
-    "description": "Chat with SteveAI — your AI assistant from the future."
+    "description": "SteveAI is a smart AI chatbot assistant for chatting, learning, and productivity."
   }
   </script>
 
-  <!-- Preload for performance -->
+  <!-- Performance -->
   <link rel="preload" href="index.css" as="style">
   <link rel="preload" href="index.js" as="script">
   <link rel="stylesheet" href="index.css">
@@ -70,19 +70,7 @@
     </div>
     <span>SteveAI</span>
   </div>
-
-  <div class="nav-links">
-    <a href="/" title="Home">🏠 Home</a>
-    <a href="about.html" title="About SteveAI">ℹ️ About</a>
-    <a href="docs.html" title="Docs">📘 Docs</a>
-    <a href="chat.html" class="active" title="Chat with SteveAI">💬 Chat</a>
-  </div>
-
   <div class="header-actions">
-    <select id="modeSelect" title="Model Mode">
-      <option value="chat" selected>SteveAI-chat</option>
-      <option value="reasoning">SteveAI-reasoning</option>
-    </select>
     <button id="clearChat" class="action-btn" title="Clear Chat">🗑️</button>
     <button id="themeToggle" class="action-btn" title="Toggle Theme">🌙</button>
   </div>
@@ -99,45 +87,9 @@
   </form>
 </div>
 
-<!-- Markdown Parser + Script -->
+<!-- Markdown parser -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="index.js"></script>
-
-<style>
-  /* Quick visual polish for nav + modeSelect */
-  #header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 16px;
-    background: #111;
-    color: #fff;
-    border-bottom: 1px solid #333;
-  }
-  .nav-links a {
-    margin: 0 8px;
-    text-decoration: none;
-    color: #aaa;
-    font-weight: 500;
-  }
-  .nav-links a:hover, .nav-links a.active {
-    color: #fff;
-  }
-  #modeSelect {
-    background: #222;
-    color: #fff;
-    border: 1px solid #333;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 0.9em;
-    margin-right: 8px;
-  }
-  body.light #modeSelect {
-    background: #eee;
-    color: #000;
-    border-color: #ccc;
-  }
-</style>
 
 </body>
 </html>
