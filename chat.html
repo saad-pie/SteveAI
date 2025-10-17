@@ -70,6 +70,8 @@
     </div>
     <span>SteveAI</span>
   </div>
+
+  <!-- Keep only action buttons -->
   <div class="header-actions">
     <button id="clearChat" class="action-btn" title="Clear Chat">🗑️</button>
     <button id="themeToggle" class="action-btn" title="Toggle Theme">🌙</button>
@@ -79,6 +81,9 @@
 <!-- Chat Area -->
 <div id="chat"></div>
 
+<!-- Model Selector (keep this for SteveAI-Reasoning / SteveAI-Chat) -->
+<div id="modelSelector"></div>
+
 <!-- Input Area -->
 <div id="inputContainer">
   <form id="inputForm">
@@ -87,7 +92,7 @@
   </form>
 </div>
 
-<!-- Markdown parser -->
+<!-- Markdown Parser + Main Script -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="index.js"></script>
 
