@@ -197,7 +197,7 @@ async function getChatReply(msg) {
   // Select model and name dynamically
   const model =
     mode === 'reasoning'
-      ? "provider-1/deepseek-r1-distill-qwen-32b"
+      ? "provider-3/deepseek-v3-0324"
       : "provider-3/gpt-5-nano";
 
   const botName = mode === 'reasoning' ? "SteveAI-reasoning" : "SteveAI-chat";
