@@ -187,35 +187,120 @@ async function fetchAI(payload) {
   throw new Error(lastErrText || "API error");
 }
 
+// --- Commands ---
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  addMessage('🌓 Theme toggled.', 'bot');
+}
+function clearChat() {
+  chat.innerHTML = '';
+  memory = {};
+  memorySummary = '';
+  turn = 0;
+  addMessage('🧹 Chat cleared.', 'bot');
+}
+function exportChat() {
+  const text = memorySummary
+    ? `[SUMMARY]\n${memorySummary}\n\n[CHAT LOG]\n${memoryString()}`
+    : `[CHAT LOG]\n${memoryString()}`;
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `SteveAI_Chat_${new Date().toISOString().slice(0,19)}.txt`;
+  a.click();
+  addMessage('💾 Chat exported as text file.', 'bot');
+}
+function showContact() {
+  const info = `
+**📬 Contact SteveAI**
+- Creator: [@saadpie](https://github.com/saad-pie)
+- Website: [steve-ai.netlify.app](https://steve-ai.netlify.app)
+- Feedback: Use /export to send logs.
+  `;
+  addMessage(info, 'bot');
+}
+async function playSummary() {
+  addMessage('🎬 Generating chat summary...', 'bot');
+  if (!memorySummary) memorySummary = await generateSummary();
+  addMessage(`🧠 **Chat Summary:**\n${memorySummary}`, 'bot');
+}
+function showAbout() {
+  const text = `
+🤖 **About SteveAI**
+Built by *saadpie* — the bot from the future.
+
+- Models: GPT-5-Nano, DeepSeek-V3, Imagen-4
+- Modes: Chat | Reasoning
+- Features: Context memory, Summarization, Commands, Theme toggle, Speech, Export
+
+_Type /help to explore commands._
+  `;
+  addMessage(text, 'bot');
+}
+function changeMode(arg) {
+  if (!arg || !['chat', 'reasoning'].includes(arg.toLowerCase())) {
+    addMessage('⚙️ Usage: /mode chat | reasoning', 'bot');
+    return;
+  }
+  if (modeSelect) modeSelect.value = arg.toLowerCase();
+  addMessage(`🧭 Switched mode to **${arg}**.`, 'bot');
+}
+function showTime() {
+  const now = new Date();
+  addMessage(`⏰ Local time: ${now.toLocaleTimeString()}`, 'bot');
+}
+function showHelp() {
+  const helpText = `
+**🧭 Available Commands**
+
+- /clear — Clears current chat
+- /theme — Toggle dark/light mode
+- /help — Show this help
+- /image <prompt> — Generate an image (Imagen-4)
+- /export — Export chat as .txt
+- /contact — Show contact info
+- /play — Summarize / replay conversation
+- /about — About SteveAI
+- /mode <chat|reasoning> — Change mode
+- /time — Show local time
+  `;
+  addMessage(helpText, 'bot');
+}
+
+// --- Command Router ---
+function handleCommand(cmd) {
+  const [command, ...args] = cmd.trim().split(' ');
+  const argString = args.join(' ');
+  switch (command.toLowerCase()) {
+    case '/clear': return clearChat();
+    case '/theme': return toggleTheme();
+    case '/help': return showHelp();
+    case '/image': return addMessage(`🖼️ Image gen not yet integrated: "${argString}"`, 'bot');
+    case '/export': return exportChat();
+    case '/contact': return showContact();
+    case '/play': return playSummary();
+    case '/about': return showAbout();
+    case '/mode': return changeMode(argString);
+    case '/time': return showTime();
+    default: return addMessage(`❓ Unknown command: ${command}`, 'bot');
+  }
+}
+
 // --- Chat Flow ---
 async function getChatReply(msg) {
   const context = await buildContext();
-
-  // detect mode (default: chat)
   const mode = (modeSelect?.value || 'chat').toLowerCase();
-
-  // Select model and name dynamically
-  const model =
-    mode === 'reasoning'
-      ? "provider-3/deepseek-v3-0324"
-      : "provider-3/gpt-5-nano";
-
+  const model = mode === 'reasoning'
+    ? "provider-3/deepseek-v3-0324"
+    : "provider-3/gpt-5-nano";
   const botName = mode === 'reasoning' ? "SteveAI-reasoning" : "SteveAI-chat";
-
   const payload = {
     model,
     messages: [
-      {
-        role: "system",
-        content: `You are ${botName}, a helpful assistant made by saadpie. Be clear, concise, and smart.`
-      },
-      {
-        role: "user",
-        content: `${context}\n\nUser: ${msg}`
-      }
+      { role: "system", content: `You are ${botName}, made by saadpie.` },
+      { role: "user", content: `${context}\n\nUser: ${msg}` }
     ]
   };
-
   const data = await fetchAI(payload);
   const reply = data?.choices?.[0]?.message?.content || "No response.";
   memory[++turn] = { user: msg, bot: reply };
@@ -227,6 +312,7 @@ form.onsubmit = async e => {
   e.preventDefault();
   const msg = input.value.trim();
   if (!msg) return;
+  if (msg.startsWith('/')) return handleCommand(msg);
   addMessage(msg, 'user');
   input.value = '';
   input.style.height = 'auto';
@@ -245,14 +331,7 @@ input.oninput = () => {
 };
 
 // --- Theme Toggle ---
-themeToggle.onclick = () => document.body.classList.toggle('light');
+themeToggle.onclick = () => toggleTheme();
 
 // --- Clear Chat ---
-clearChatBtn.onclick = () => {
-  chat.innerHTML = '';
-  memory = {};
-  memorySummary = '';
-  turn = 0;
-  addMessage('🧹 Chat cleared.', 'bot');
-};
-  
+clearChatBtn.onclick = () => clearChat();
