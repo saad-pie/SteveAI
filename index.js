@@ -46,7 +46,7 @@ function shouldSummarize() {
 async function generateSummary() {
   const raw = memoryString();
   const payload = {
-    model: "provider-3/gpt-4",
+    model: "provider-3/gpt-4o-mini",
     messages: [
       { role: "system", content: "You are SteveAI, made by saadpie. Summarize the following chat context clearly." },
       { role: "user", content: raw }
@@ -197,7 +197,7 @@ async function getChatReply(msg) {
   // Select model and name dynamically
   const model =
     mode === 'reasoning'
-      ? "provider-1/deepseek-v3-0324-turbo"
+      ? "provider-1/deepseek-r1-distill-qwen-32b"
       : "provider-3/gpt-5-nano";
 
   const botName = mode === 'reasoning' ? "SteveAI-reasoning" : "SteveAI-chat";
