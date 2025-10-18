@@ -157,34 +157,6 @@
     #commandHints span:hover {
       background: #333;
     }
-    .modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .modal-content {
-      background: #1e1e1e;
-      padding: 20px;
-      border-radius: 12px;
-      text-align: center;
-      max-width: 400px;
-      box-shadow: 0 0 20px rgba(255,255,255,0.1);
-    }
-    .modal-content a { color: #4da6ff; text-decoration: none; }
-    .modal-content button {
-      margin-top: 10px;
-      padding: 6px 12px;
-      border: none;
-      background: #444;
-      color: #fff;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .modal-content button:hover { background: #666; }
   </style>
 
   <script>
@@ -203,11 +175,6 @@
         hints.hidden = true;
       };
     });
-
-    // Contact modal
-    function closeContactModal() {
-      document.getElementById('contactModal').hidden = true;
-    }
   </script>
 </body>
 </html>
