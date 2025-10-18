@@ -5,35 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SteveAI - Smart AI Assistant</title>
 
-  <!-- Basic SEO -->
-  <meta name="description" content="SteveAI is your smart AI assistant for chatting, learning, and creating. Explore AI conversations, boost productivity, and generate new ideas.">
-  <meta name="keywords" content="SteveAI, AI assistant, chatbot, artificial intelligence, online AI, productivity AI, free AI chat, Steve AI bot, smart assistant, generative AI">
+  <!-- SEO -->
+  <meta name="description" content="SteveAI is your smart AI assistant for chatting, learning, and creating.">
+  <meta name="keywords" content="SteveAI, AI assistant, chatbot, smart AI, generative AI, productivity, learning AI">
   <meta name="author" content="SteveAI">
-
-  <!-- Open Graph for Social Sharing -->
   <meta property="og:title" content="SteveAI - Smart AI Assistant">
-  <meta property="og:description" content="Chat with SteveAI: a smart AI assistant for learning, productivity, and creativity.">
+  <meta property="og:description" content="Chat with SteveAI: your AI assistant for learning, productivity, and creativity.">
   <meta property="og:image" content="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s">
   <meta property="og:url" content="https://steve-ai.netlify.app/chat.html">
   <meta property="og:type" content="website">
-
-  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="SteveAI - Smart AI Assistant">
   <meta name="twitter:description" content="Discover SteveAI: your AI-powered assistant for chat, learning, and creativity.">
   <meta name="twitter:image" content="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s">
-
-  <!-- Favicon -->
+  <meta name="theme-color" content="#1e1e1e"/>
+  <link rel="canonical" href="https://steve-ai.netlify.app/chat.html">
   <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s" type="image/png">
 
-  <!-- Canonical URL -->
-  <link rel="canonical" href="https://steve-ai.netlify.app/chat.html">
-
-  <!-- Robots -->
-  <meta name="robots" content="index, follow">
-
-  <!-- Theme Color -->
-  <meta name="theme-color" content="#1e1e1e"/>
+  <link rel="preload" href="index.css" as="style">
+  <link rel="preload" href="index.js" as="script">
+  <link rel="stylesheet" href="index.css">
 
   <!-- Structured Data -->
   <script type="application/ld+json">
@@ -43,94 +34,194 @@
     "name": "SteveAI Chat",
     "url": "https://steve-ai.netlify.app/chat.html",
     "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s",
-    "author": {
-      "@type": "Person",
-      "name": "saadpie"
-    },
+    "author": { "@type": "Person", "name": "saadpie" },
     "applicationCategory": "AI Assistant",
     "operatingSystem": "Web Browser",
     "description": "Chat with SteveAI — your AI assistant from the future."
   }
   </script>
-
-  <!-- Preload for performance -->
-  <link rel="preload" href="index.css" as="style">
-  <link rel="preload" href="index.js" as="script">
-  <link rel="stylesheet" href="index.css">
 </head>
+
 <body>
-
-<!-- Header -->
-<div id="header">
-  <div class="logo">
-    <div class="logo-icon">
-      <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s" 
-           alt="SteveAI Logo" 
-           style="width:100%; height:100%; border-radius:8px; object-fit:cover;">
+  <!-- Header -->
+  <div id="header">
+    <div class="logo">
+      <div class="logo-icon">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s" 
+             alt="SteveAI Logo" 
+             style="width:100%; height:100%; border-radius:8px; object-fit:cover;">
+      </div>
+      <span>SteveAI</span>
     </div>
-    <span>SteveAI</span>
+
+    <div class="header-actions">
+      <select id="modeSelect" title="Model Mode">
+        <option value="chat" selected>SteveAI-chat</option>
+        <option value="reasoning">SteveAI-reasoning</option>
+      </select>
+      <button id="clearChat" class="action-btn" title="Clear Chat">🗑️</button>
+      <button id="themeToggle" class="action-btn" title="Toggle Theme">🌙</button>
+    </div>
   </div>
 
-  <div class="header-actions">
-    <select id="modeSelect" title="Model Mode">
-      <option value="chat" selected>SteveAI-chat</option>
-      <option value="reasoning">SteveAI-reasoning</option>
-    </select>
-    <button id="clearChat" class="action-btn" title="Clear Chat">🗑️</button>
-    <button id="themeToggle" class="action-btn" title="Toggle Theme">🌙</button>
+  <!-- Chat Area -->
+  <div id="chat"></div>
+
+  <!-- Command Hint Bar -->
+  <div id="commandHints" hidden>
+    <span>/help</span><span>/clear</span><span>/theme</span>
+    <span>/export</span><span>/image</span><span>/contact</span><span>/play</span>
   </div>
-</div>
 
-<!-- Chat Area -->
-<div id="chat"></div>
+  <!-- Input -->
+  <div id="inputContainer">
+    <form id="inputForm">
+      <textarea id="messageInput" placeholder="Type your message..." rows="1" required></textarea>
+      <button type="submit" id="sendBtn" title="Send">↑</button>
+    </form>
+  </div>
 
-<!-- Input Area -->
-<div id="inputContainer">
-  <form id="inputForm">
-    <textarea id="messageInput" placeholder="Type your message..." rows="1" required></textarea>
-    <button type="submit" id="sendBtn" title="Send Message">↑</button>
-  </form>
-</div>
+  <!-- Contact Modal -->
+  <div id="contactModal" class="modal" hidden>
+    <div class="modal-content">
+      <h3>Contact SteveAI Team</h3>
+      <p>Reach out to <strong>saadpie</strong> at:</p>
+      <ul>
+        <li>Email: <a href="mailto:saadpie@gmail.com">saadpie@gmail.com</a></li>
+        <li>GitHub: <a href="https://github.com/saad-pie" target="_blank">saad-pie</a></li>
+        <li>Website: <a href="https://steve-ai.netlify.app" target="_blank">steve-ai.netlify.app</a></li>
+      </ul>
+      <button onclick="closeContactModal()">Close</button>
+    </div>
+  </div>
 
-<!-- Markdown Parser + Script -->
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="index.js"></script>
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="index.js"></script>
 
-<style>
-  /* Quick visual polish for nav + modeSelect */
-  #header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 16px;
-    background: #111;
-    color: #fff;
-    border-bottom: 1px solid #333;
-  }
-  .nav-links a {
-    margin: 0 8px;
-    text-decoration: none;
-    color: #aaa;
-    font-weight: 500;
-  }
-  .nav-links a:hover, .nav-links a.active {
-    color: #fff;
-  }
-  #modeSelect {
-    background: #222;
-    color: #fff;
-    border: 1px solid #333;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 0.9em;
-    margin-right: 8px;
-  }
-  body.light #modeSelect {
-    background: #eee;
-    color: #000;
-    border-color: #ccc;
-  }
-</style>
+  <style>
+    body {
+      margin: 0;
+      background: #0d0d0d;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      transition: background 0.3s, color 0.3s;
+    }
+    body.light {
+      background: #fafafa;
+      color: #111;
+    }
 
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      background: #111;
+      color: #fff;
+      border-bottom: 1px solid #333;
+    }
+    #chat {
+      height: calc(100vh - 140px);
+      overflow-y: auto;
+      padding: 20px;
+      scroll-behavior: smooth;
+    }
+    #inputContainer {
+      padding: 10px;
+      border-top: 1px solid #333;
+      background: #111;
+      display: flex;
+      justify-content: center;
+    }
+    textarea {
+      width: 80%;
+      resize: none;
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 1em;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+    body.light textarea {
+      background: #fff;
+      color: #000;
+      border: 1px solid #ccc;
+    }
+    #commandHints {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      background: #181818;
+      padding: 6px 0;
+      font-size: 0.9em;
+      border-top: 1px solid #222;
+    }
+    #commandHints span {
+      background: #222;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+    #commandHints span:hover {
+      background: #333;
+    }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      max-width: 400px;
+      box-shadow: 0 0 20px rgba(255,255,255,0.1);
+    }
+    .modal-content a { color: #4da6ff; text-decoration: none; }
+    .modal-content button {
+      margin-top: 10px;
+      padding: 6px 12px;
+      border: none;
+      background: #444;
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .modal-content button:hover { background: #666; }
+  </style>
+
+  <script>
+    // Toggle command hints visibility
+    const input = document.getElementById('messageInput');
+    const hints = document.getElementById('commandHints');
+
+    input.addEventListener('input', () => {
+      hints.hidden = !input.value.trim().startsWith('/');
+    });
+
+    document.querySelectorAll('#commandHints span').forEach(span => {
+      span.onclick = () => {
+        input.value = span.textContent + ' ';
+        input.focus();
+        hints.hidden = true;
+      };
+    });
+
+    // Contact modal
+    function closeContactModal() {
+      document.getElementById('contactModal').hidden = true;
+    }
+  </script>
 </body>
-</html>
+  </html>
+  
