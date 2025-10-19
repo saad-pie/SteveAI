@@ -31,14 +31,23 @@ function shouldSummarize(){ return !memorySummary && (turn>=6 || approxTokens(me
 
 /* ====== System prompts ====== */
 const SYSTEM_PROMPT_GLOBAL =
-  "You are SteveAI, made by saadpie. You have the ability to trigger image generation through the backend (generateImage(prompt)). " +
-  "If you want an image generated, do NOT describe, explain, or include URLs. Respond ONLY with: Image Generated: <prompt>. " +
-  "The title MUST be exactly 'Image Generated:' (capital I, capital G, colon included). No extra sentences, markdown, emojis, or code. " +
-  "The system will detect that line and generate the image automatically. Auto-generate when the user's intent is clearly visual; otherwise suggest. Be helpful, concise and not spammy.";
+  "You are SteveAI, made by saadpie. You can generate images directly via the backend using generateImage(prompt). " +
+  "When a user's intent is clearly visual, respond ONLY with: Image Generated: <prompt> — exactly like this, no extra text, markdown, emojis, or URLs. " +
+  "The system will automatically detect this and generate the image. Be concise, helpful, and practical.";
 
 const SYSTEM_PROMPT_CHAT = "Friendly, concise assistant. Prioritize clarity and helpfulness. Suggest images when relevant.";
 const SYSTEM_PROMPT_REASONING = "Analytical reasoning mode — be methodical, show steps when needed, be concise in conclusions.";
-const SYSTEM_PROMPT_GENERAL = "General assistant (steveai-general / grok-4-0709): practical, factual, concise, prefer precise answers and step-by-step when requested; avoid hallucination.";
+const SYSTEM_PROMPT_GENERAL =
+`You are SteveAI-General, an advanced assistant capable of both text and image generation. 
+Always assume you can generate images directly using the backend (generateImage(prompt)). 
+When the user requests an image or describes a visual scene, respond ONLY with:
+
+Image Generated: <prompt>
+
+— exactly as written, no extra explanation, markdown, emojis, or URLs. 
+Do NOT say you cannot generate images. 
+Be practical, factual, concise, and precise; show step-by-step reasoning if requested. 
+For non-visual queries, respond normally as a helpful, concise assistant.`;
 
 /* ====== Image generation (HTTP fetch) ====== */
 async function generateImage(prompt){
@@ -132,7 +141,7 @@ function addBotActions(container,bubble,text){
   container.appendChild(actions);
 }
 
-/* append image-only bubble (keeps prompt in dataset for regen/save) */
+/* append image-only bubble */
 function appendImageBubble(imgUrl, prompt){
   const container = document.createElement('div'); container.className='message-container bot';
   container.dataset.prompt = prompt || '';
@@ -178,7 +187,6 @@ async function buildContext(){
 async function getChatReply(msg){
   const context = await buildContext();
   const mode = (modeSelect?.value || 'chat').toLowerCase();
-  // model mapping: chat -> gpt-5-nano, reasoning -> deepseek, general -> grok-4-0709
   const model = mode === 'reasoning' ? "provider-3/deepseek-v3-0324" : (mode === 'general' ? "provider-5/grok-4-0709" : "provider-3/gpt-5-nano");
   const modePrompt = mode === 'reasoning' ? SYSTEM_PROMPT_REASONING : (mode === 'general' ? SYSTEM_PROMPT_GENERAL : SYSTEM_PROMPT_CHAT);
   const systemContent = `${SYSTEM_PROMPT_GLOBAL} ${modePrompt}`;
@@ -195,15 +203,14 @@ async function getChatReply(msg){
   const reply = data?.choices?.[0]?.message?.content?.trim() || "No response.";
   memory[++turn] = { user: msg, bot: reply };
 
-  // IMAGE TRIGGER detection
   if(reply && reply.toLowerCase().startsWith('image generated:')){
     const prompt = reply.split(':').slice(1).join(':').trim();
     if(!prompt){ addMessage('⚠️ Image prompt empty.','bot'); return null; }
     try{
       const url = await generateImage(prompt);
       if(!url){ addMessage('⚠️ No image returned from server.','bot'); return null; }
-      appendImageBubble(url, prompt); // show only image + controls
-      return null; // already handled
+      appendImageBubble(url, prompt);
+      return null;
     }catch(err){
       addMessage(`⚠️ Image generation failed: ${err.message}`,'bot'); return null;
     }
@@ -264,3 +271,4 @@ form.onsubmit = async e => {
 input.oninput = ()=>{ input.style.height='auto'; input.style.height = input.scrollHeight + 'px'; };
 themeToggle.onclick = ()=>toggleTheme();
 clearChatBtn.onclick = ()=>clearChat();
+   
