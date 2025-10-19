@@ -12,6 +12,10 @@ const API_KEYS = [
   "ddc-a4f-93af1cce14774a6f831d244f4df3eb9e"
 ];
 
+/* ====== Firecrawl config ====== */
+const FIRECRAWL_API_KEY = "fc-ebe5b6f4af4e469dbfe714e9296ea55a"; // replace if needed
+const FIRECRAWL_ENDPOINT = "https://api.firecrawl.dev/v1/search";
+
 /* ====== DOM refs ====== */
 const chat = document.getElementById('chat');
 const form = document.getElementById('inputForm');
@@ -19,6 +23,39 @@ const input = document.getElementById('messageInput');
 const themeToggle = document.getElementById('themeToggle');
 const clearChatBtn = document.getElementById('clearChat');
 const modeSelect = document.getElementById('modeSelect'); // supports 'chat' | 'reasoning' | 'general'
+
+/* ====== Add Web Search toggle UI (vanilla) ====== */
+(function createWebSearchToggle(){
+  try{
+    // create a small label+checkbox and insert near modeSelect if possible
+    const container = document.createElement('div');
+    container.style = 'display:inline-flex;align-items:center;gap:6px;margin-left:12px;font-size:13px;color:var(--muted, #ddd);';
+    container.id = 'webSearchContainer';
+
+    const label = document.createElement('label');
+    label.style = 'display:inline-flex;align-items:center;gap:6px;cursor:pointer;';
+    label.title = 'Toggle web search (Firecrawl) for messages';
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.id = 'webSearchToggle';
+    cb.style = 'transform:scale(0.95);';
+
+    const span = document.createElement('span');
+    span.textContent = 'Web Search';
+    span.style = 'font-size:12px;opacity:0.85;';
+
+    label.appendChild(cb);
+    label.appendChild(span);
+    container.appendChild(label);
+
+    if(modeSelect && modeSelect.parentNode){
+      modeSelect.parentNode.insertBefore(container, modeSelect.nextSibling);
+    } else {
+      document.body.appendChild(container);
+    }
+  }catch(e){ console.warn('web search toggle init failed', e); }
+})();
 
 /* ====== Memory & utils ====== */
 let memory = {}, turn = 0, memorySummary = "";
@@ -169,6 +206,38 @@ async function fetchAI(payload){
   throw new Error(lastErr||'API error');
 }
 
+/* ====== Firecrawl: search/scrape/crawl/map ====== */
+async function getFirecrawlFullContext(userQuery){
+  try{
+    const body = {
+      query: userQuery,
+      formats: ["markdown"],
+      limit: 4,
+      crawl: true,
+      map: true
+    };
+
+    const res = await fetch(FIRECRAWL_ENDPOINT,{
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${FIRECRAWL_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+    if(!data || !data.results || !data.results.length) return "No relevant content found.";
+
+    // Firecrawl already returns mapped summaries; combine them for LLM context
+    const combined = data.results.map(r => r.markdown || r.text || r.summary || '').filter(Boolean).join('\n\n---\n\n');
+    return combined || "No relevant content found.";
+  }catch(e){
+    console.error('Firecrawl error', e);
+    return "Error fetching web content.";
+  }
+}
+
 /* ====== Summarize helpers ====== */
 async function generateSummary(){
   const raw = memoryString();
@@ -183,18 +252,28 @@ async function buildContext(){
   return memorySummary ? `[SESSION SUMMARY]\n${memorySummary}\n\n[RECENT TURNS]\n${lastTurns(6)}` : memoryString();
 }
 
-/* ====== Chat reply + image-detection workflow ====== */
-async function getChatReply(msg){
+/* ====== Chat reply + image-detection workflow (with optional websearch) ====== */
+async function getChatReply(msg, useWebSearch=false){
   const context = await buildContext();
   const mode = (modeSelect?.value || 'chat').toLowerCase();
   const model = mode === 'reasoning' ? "provider-3/deepseek-v3-0324" : (mode === 'general' ? "provider-5/grok-4-0709" : "provider-3/gpt-5-nano");
   const modePrompt = mode === 'reasoning' ? SYSTEM_PROMPT_REASONING : (mode === 'general' ? SYSTEM_PROMPT_GENERAL : SYSTEM_PROMPT_CHAT);
   const systemContent = `${SYSTEM_PROMPT_GLOBAL} ${modePrompt}`;
 
+  let searchContext = "";
+  if(useWebSearch){
+    addMessage('🔍 Performing web search...','bot');
+    // strip tag if present
+    const cleaned = msg.replace(/\[websearch\]/i,'').trim();
+    searchContext = await getFirecrawlFullContext(cleaned);
+  }
+
   const payload = {
     model,
     messages: [
       { role:'system', content: systemContent },
+      // silently attach web context as system guidance (do not mention the source)
+      ...(searchContext ? [{ role:'system', content: `Use the following context to answer the user's question. Do NOT mention the source or say that external content was provided.\n\n${searchContext}` }] : []),
       { role:'user', content: `${context}\n\nUser: ${msg}` }
     ]
   };
@@ -254,8 +333,8 @@ function showTime(){ addMessage(`⏰ Local time: ${new Date().toLocaleTimeString
 function showHelp(){ addMessage(`**Commands:** /help /clear /theme /image <prompt> /export /contact /play /about /mode /time`,'bot'); }
 
 /* ====== Chat flow & bindings ====== */
-async function getAndShowReply(msg){
-  const reply = await getChatReply(msg);
+async function getAndShowReply(msg, useWebSearch=false){
+  const reply = await getChatReply(msg, useWebSearch);
   if(reply) addMessage(reply,'bot');
 }
 
@@ -264,11 +343,16 @@ form.onsubmit = async e => {
   const msg = input.value.trim();
   if(!msg) return;
   if(msg.startsWith('/')){ await handleCommand(msg); input.value=''; return; }
+
+  // decide whether to use web search: checkbox OR [websearch] tag in message
+  const toggle = document.getElementById('webSearchToggle');
+  const useWebSearch = (toggle && toggle.checked) || msg.toLowerCase().includes('[websearch]');
+
   addMessage(msg,'user'); input.value=''; input.style.height='auto';
-  try{ await getAndShowReply(msg); }catch(e){ addMessage('⚠️ Request failed. Check console.','bot'); }
+  try{ await getAndShowReply(msg, useWebSearch); }catch(e){ addMessage('⚠️ Request failed. Check console.','bot'); }
 };
 
 input.oninput = ()=>{ input.style.height='auto'; input.style.height = input.scrollHeight + 'px'; };
 themeToggle.onclick = ()=>toggleTheme();
 clearChatBtn.onclick = ()=>clearChat();
-   
+                      
