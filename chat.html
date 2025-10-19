@@ -209,10 +209,14 @@
     body.light #featureMenu { background: #fff; color: #000; border: 1px solid #ccc; }
   </style>
 
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="index.js"></script>
+
   <script>
     const inputEl = document.getElementById('messageInput');
     const hintsEl = document.getElementById('commandHints');
 
+    // Show command hints
     inputEl.addEventListener('input', () => {
       hintsEl.hidden = !inputEl.value.trim().startsWith('/');
     });
@@ -230,8 +234,19 @@
     const featureMenu = document.getElementById('featureMenu');
     featureBtn.onclick = () => featureMenu.hidden = !featureMenu.hidden;
 
-    const websearchToggle = document.getElementById('websearchToggle');
-    // In index.js, check `if(websearchToggle.checked){ doWebSearch(msg); }`
+    // Prevent form reload and send via index.js
+    const inputForm = document.getElementById('inputForm');
+    inputForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = inputEl.value.trim();
+      if (!msg) return;
+      const webSearch = document.getElementById('websearchToggle').checked;
+      inputEl.value = '';
+      // Call your function in index.js
+      if (typeof handleSend === 'function') {
+        await handleSend(msg, webSearch);
+      }
+    };
   </script>
 </body>
 </html>
