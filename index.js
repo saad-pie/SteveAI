@@ -1,6 +1,16 @@
 /* =========================
-   index.js — SteveAI (serverless safe)
+   index.js — SteveAI (concise & updated)
    ========================= */
+
+/* ====== Config ====== */
+const API_BASE = "https://api.a4f.co/v1/chat/completions";
+const IMAGE_ENDPOINT = "https://api.a4f.co/v1/images/generations";
+const PROXY = "https://corsproxy.io/?url=";
+const proxied = u => PROXY + encodeURIComponent(u);
+const API_KEYS = [
+  "ddc-a4f-d61cbe09b0f945ea93403a420dba8155",
+  "ddc-a4f-93af1cce14774a6f831d244f4df3eb9e"
+];
 
 /* ====== DOM refs ====== */
 const chat = document.getElementById('chat');
@@ -30,37 +40,16 @@ const SYSTEM_PROMPT_CHAT = "Friendly, concise assistant. Prioritize clarity and 
 const SYSTEM_PROMPT_REASONING = "Analytical reasoning mode — be methodical, show steps when needed, be concise in conclusions.";
 const SYSTEM_PROMPT_GENERAL = "General assistant (steveai-general / grok-4-0709): practical, factual, concise, prefer precise answers and step-by-step when requested; avoid hallucination.";
 
-/* ====== Serverless fetch helpers ====== */
-async function fetchAI(payload){
-  try {
-    const res = await fetch('/.netlify/functions/steveai-chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if(!res.ok) throw new Error('Server error');
-    return await res.json();
-  } catch(e){
-    addMessage('⚠️ API unreachable. Check server function.', 'bot');
-    throw e;
-  }
-}
-
+/* ====== Image generation (HTTP fetch) ====== */
 async function generateImage(prompt){
   if(!prompt) throw new Error("No prompt provided");
-  try {
-    const res = await fetch('/.netlify/functions/steveai-chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'image', prompt })
-    });
-    if(!res.ok) throw new Error('Image server error');
-    const data = await res.json();
-    return data?.url || null;
-  } catch(e){
-    addMessage(`⚠️ Image generation failed: ${e.message}`, 'bot');
-    return null;
-  }
+  const res = await fetch(IMAGE_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEYS[0]}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model:"provider-4/imagen-4", prompt, n:1, size:"1024x1024" })
+  });
+  const data = await res.json();
+  return data?.data?.[0]?.url || null;
 }
 window.generateImage = generateImage;
 
@@ -120,6 +109,7 @@ function addBotActions(container,bubble,text){
   speak.onclick = ()=>speechSynthesis.speak(new SpeechSynthesisUtterance(stripHtml(text)));
   actions.appendChild(copy); actions.appendChild(speak);
 
+  // attach image controls if dataset present
   if(container.dataset && container.dataset.prompt){
     const openBtn = Object.assign(document.createElement('button'),{className:'action-btn',textContent:'🔗',title:'Open image'});
     openBtn.onclick = ()=> window.open(container.dataset.url,'_blank');
@@ -142,7 +132,7 @@ function addBotActions(container,bubble,text){
   container.appendChild(actions);
 }
 
-/* append image-only bubble */
+/* append image-only bubble (keeps prompt in dataset for regen/save) */
 function appendImageBubble(imgUrl, prompt){
   const container = document.createElement('div'); container.className='message-container bot';
   container.dataset.prompt = prompt || '';
@@ -153,6 +143,21 @@ function appendImageBubble(imgUrl, prompt){
   bubble.appendChild(content); container.appendChild(bubble);
   chat.appendChild(container); chat.scrollTop = chat.scrollHeight;
   addBotActions(container,bubble,'[Image]');
+}
+
+/* ====== fetchAI (rotating keys + proxy) ====== */
+async function fetchAI(payload){
+  const url = proxied(API_BASE);
+  let lastErr='';
+  for(const key of API_KEYS){
+    try{
+      const res = await fetch(url,{method:'POST',headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      if(res.ok) return res.json();
+      lastErr = await res.text();
+    }catch(e){ console.warn('fetchAI err',e); }
+  }
+  addMessage('⚠️ API unreachable. Check keys or proxy.','bot');
+  throw new Error(lastErr||'API error');
 }
 
 /* ====== Summarize helpers ====== */
@@ -173,6 +178,7 @@ async function buildContext(){
 async function getChatReply(msg){
   const context = await buildContext();
   const mode = (modeSelect?.value || 'chat').toLowerCase();
+  // model mapping: chat -> gpt-5-nano, reasoning -> deepseek, general -> grok-4-0709
   const model = mode === 'reasoning' ? "provider-3/deepseek-v3-0324" : (mode === 'general' ? "provider-3/grok-4-0709" : "provider-3/gpt-5-nano");
   const modePrompt = mode === 'reasoning' ? SYSTEM_PROMPT_REASONING : (mode === 'general' ? SYSTEM_PROMPT_GENERAL : SYSTEM_PROMPT_CHAT);
   const systemContent = `${SYSTEM_PROMPT_GLOBAL} ${modePrompt}`;
@@ -189,14 +195,15 @@ async function getChatReply(msg){
   const reply = data?.choices?.[0]?.message?.content?.trim() || "No response.";
   memory[++turn] = { user: msg, bot: reply };
 
+  // IMAGE TRIGGER detection
   if(reply && reply.toLowerCase().startsWith('image generated:')){
     const prompt = reply.split(':').slice(1).join(':').trim();
     if(!prompt){ addMessage('⚠️ Image prompt empty.','bot'); return null; }
     try{
       const url = await generateImage(prompt);
       if(!url){ addMessage('⚠️ No image returned from server.','bot'); return null; }
-      appendImageBubble(url, prompt);
-      return null;
+      appendImageBubble(url, prompt); // show only image + controls
+      return null; // already handled
     }catch(err){
       addMessage(`⚠️ Image generation failed: ${err.message}`,'bot'); return null;
     }
@@ -257,4 +264,3 @@ form.onsubmit = async e => {
 input.oninput = ()=>{ input.style.height='auto'; input.style.height = input.scrollHeight + 'px'; };
 themeToggle.onclick = ()=>toggleTheme();
 clearChatBtn.onclick = ()=>clearChat();
-                                 
