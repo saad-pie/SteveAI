@@ -58,17 +58,19 @@
     <p id="message"></p>
   </div>
 
-  <!-- Module script for ES Module import -->
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
+    // 1️⃣ Initialize supabase BEFORE anything else
     const supabaseUrl = 'https://hncqtajrwyveyyliszbv.supabase.co';
     const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuY3F0YWpyd3l2ZXl5bGlzemJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3NDYzNDAsImV4cCI6MjA3NjMyMjM0MH0.bacRHbmPn5tlFQY5XjBmDa4ALzTxc4aTAWFN_mLsIeI";
-
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // 2️⃣ Access DOM elements
     const form = document.getElementById("signup-form");
     const message = document.getElementById("message");
 
+    // 3️⃣ Handle signup
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("email").value;
@@ -78,9 +80,7 @@
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: window.location.origin + "/login.html"
-          }
+          options: { emailRedirectTo: window.location.origin + "/login.html" }
         });
 
         if (error) {
@@ -91,6 +91,8 @@
           message.textContent = "Signup successful! Redirecting to login…";
           message.style.color = "lightgreen";
           console.log(data);
+
+          // Redirect to login after 2s
           setTimeout(() => {
             window.location.href = "/login.html";
           }, 2000);
