@@ -72,20 +72,33 @@
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: window.location.origin + "/login.html"
-        }
-      });
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: window.location.origin + "/login.html"
+          }
+        });
 
-      if (error) {
-        message.textContent = error.message;
+        if (error) {
+          message.textContent = "Error: " + error.message;
+          message.style.color = "red";
+          console.error(error);
+        } else {
+          message.textContent = "Signup successful! Redirecting to login…";
+          message.style.color = "lightgreen";
+          console.log(data);
+
+          // Redirect after 2 seconds
+          setTimeout(() => {
+            window.location.href = "/login.html";
+          }, 2000);
+        }
+      } catch (err) {
+        message.textContent = "Unexpected error occurred.";
         message.style.color = "red";
-      } else {
-        message.textContent = "Signup successful! Check your email to verify your account.";
-        message.style.color = "lightgreen";
+        console.error(err);
       }
     });
   </script>
