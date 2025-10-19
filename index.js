@@ -179,7 +179,7 @@ async function getChatReply(msg){
   const context = await buildContext();
   const mode = (modeSelect?.value || 'chat').toLowerCase();
   // model mapping: chat -> gpt-5-nano, reasoning -> deepseek, general -> grok-4-0709
-  const model = mode === 'reasoning' ? "provider-3/deepseek-v3-0324" : (mode === 'general' ? "provider-3/grok-4-0709" : "provider-3/gpt-5-nano");
+  const model = mode === 'reasoning' ? "provider-3/deepseek-v3-0324" : (mode === 'general' ? "provider-5/grok-4-0709" : "provider-3/gpt-5-nano");
   const modePrompt = mode === 'reasoning' ? SYSTEM_PROMPT_REASONING : (mode === 'general' ? SYSTEM_PROMPT_GENERAL : SYSTEM_PROMPT_CHAT);
   const systemContent = `${SYSTEM_PROMPT_GLOBAL} ${modePrompt}`;
 
