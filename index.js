@@ -247,4 +247,3 @@ input.oninput = ()=>{ input.style.height='auto'; input.style.height = input.scro
 themeToggle.onclick = ()=>toggleTheme();
 clearChatBtn.onclick = ()=>clearChat();
 
-      
