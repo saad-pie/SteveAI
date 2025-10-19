@@ -1,4 +1,31 @@
 // --- DOM Elements ---
+// --- IMAGE GENERATION (Imagen-4) ---
+import OpenAI from "https://esm.sh/openai";
+
+const imageClient = new OpenAI({
+  apiKey: API_KEYS[0], // using your existing key fallback
+  baseURL: "https://api.a4f.co/v1",
+  dangerouslyAllowBrowser: true
+});
+
+async function generateImage(prompt) {
+  if (!prompt) throw new Error("No prompt provided");
+
+  try {
+    const response = await imageClient.images.generate({
+      model: "provider-4/imagen-4",
+      prompt,
+      n: 1,
+      size: "1024x1024"
+    });
+
+    return response?.data?.[0]?.url || null;
+  } catch (err) {
+    console.error("Image generation error:", err);
+    throw err;
+  }
+}
+
 const chat = document.getElementById('chat');
 const form = document.getElementById('inputForm');
 const input = document.getElementById('messageInput');
