@@ -301,14 +301,63 @@ function showHelp() {
 }
 
 // --- Command Router ---
-function handleCommand(cmd) {
+async function handleCommand(cmd) {
   const [command, ...args] = cmd.trim().split(' ');
   const argString = args.join(' ');
   switch (command.toLowerCase()) {
     case '/clear': return clearChat();
     case '/theme': return toggleTheme();
     case '/help': return showHelp();
-    case '/image': return addMessage(`🖼️ Image gen not yet integrated: "${argString}"`, 'bot');
+
+    case '/image': {
+      if (!argString) {
+        addMessage('⚠️ Usage: /image <prompt>', 'bot');
+        return;
+      }
+
+      // Notify user generation started (uses typing animation)
+      addMessage(`🎨 Generating image for: *${argString}* ...`, 'bot');
+
+      try {
+        const url = await generateImage(argString);
+
+        if (!url) {
+          addMessage('⚠️ No image was returned from the server.', 'bot');
+          return;
+        }
+
+        // Build HTML block for image + link + caption (style C)
+        const html = `
+**🖼️ Generated Image:** "${argString}"
+
+<img src="${url}" alt="AI Image" style="max-width:90%;border-radius:10px;margin-top:10px;" />
+
+🔗 <a href="${url}" target="_blank">${url}</a>
+        `;
+
+        // Append immediately (bypass typing animation to avoid broken HTML)
+        const container = document.createElement('div');
+        container.className = 'message-container bot';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble bot';
+        container.appendChild(bubble);
+
+        const content = document.createElement('div');
+        content.className = 'bubble-content';
+        content.innerHTML = markdownToHTML(html);
+        bubble.appendChild(content);
+
+        chat.appendChild(container);
+        chat.scrollTop = chat.scrollHeight;
+
+        addBotActions(container, bubble, html);
+      } catch (err) {
+        addMessage(`⚠️ Image generation failed: ${err.message}`, 'bot');
+      }
+      return;
+    }
+
     case '/export': return exportChat();
     case '/contact': return showContact();
     case '/play': return playSummary();
@@ -345,7 +394,10 @@ form.onsubmit = async e => {
   e.preventDefault();
   const msg = input.value.trim();
   if (!msg) return;
-  if (msg.startsWith('/')) return handleCommand(msg);
+  if (msg.startsWith('/')) {
+    await handleCommand(msg);
+    return;
+  }
   addMessage(msg, 'user');
   input.value = '';
   input.style.height = 'auto';
@@ -368,3 +420,4 @@ themeToggle.onclick = () => toggleTheme();
 
 // --- Clear Chat ---
 clearChatBtn.onclick = () => clearChat();
+  
