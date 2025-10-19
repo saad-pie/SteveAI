@@ -7,6 +7,8 @@
   <meta name="author" content="SteveAI by saadpie" />
   <meta name="theme-color" content="#111" />
   <title>SteveAI – Image Generator</title>
+  
+  <!-- Favicon -->
   <link rel="icon" href="/assets/favicon.png" />
 
   <style>
@@ -82,20 +84,24 @@
     <div id="result"></div>
   </main>
 
-  <!-- Import shared JS -->
-  <script type="module" src="/index.js"></script>
+  <script type="module">
+    const generateBtn = document.getElementById("generateBtn");
+    const promptInput = document.getElementById("prompt");
+    const resultDiv = document.getElementById("result");
 
-  <!-- Trigger -->
-  <script>
-    document.getElementById("generateBtn").addEventListener("click", async () => {
-      const prompt = document.getElementById("prompt").value.trim();
+    generateBtn.addEventListener("click", async () => {
+      const prompt = promptInput.value.trim();
       if (!prompt) return alert("Please enter a prompt!");
 
-      const resultDiv = document.getElementById("result");
       resultDiv.innerHTML = "<p>Generating...</p>";
 
       try {
-        const imageUrl = await generateImage(prompt); // coming from index.js
+        const imageUrl = await window.generateImage(prompt);
+        if (!imageUrl) {
+          resultDiv.innerHTML = `<p style="color:red;">Error: No image returned.</p>`;
+          return;
+        }
+
         resultDiv.innerHTML = `
           <img src="${imageUrl}" alt="Generated Image">
           <p><a href="${imageUrl}" target="_blank">Open in new tab</a></p>
