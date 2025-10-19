@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sign Up | SteveAI</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       font-family: "Poppins", sans-serif;
@@ -59,11 +58,14 @@
     <p id="message"></p>
   </div>
 
-  <script>
-    const SUPABASE_URL = "https://hncqtajrwyveyyliszbv.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuY3F0YWpyd3l2ZXl5bGlzemJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3NDYzNDAsImV4cCI6MjA3NjMyMjM0MH0.bacRHbmPn5tlFQY5XjBmDa4ALzTxc4aTAWFN_mLsIeI";
+  <!-- Module script for ES Module import -->
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseUrl = 'https://hncqtajrwyveyyliszbv.supabase.co';
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuY3F0YWpyd3l2ZXl5bGlzemJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3NDYzNDAsImV4cCI6MjA3NjMyMjM0MH0.bacRHbmPn5tlFQY5XjBmDa4ALzTxc4aTAWFN_mLsIeI";
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
     const form = document.getElementById("signup-form");
     const message = document.getElementById("message");
 
@@ -89,8 +91,6 @@
           message.textContent = "Signup successful! Redirecting to login…";
           message.style.color = "lightgreen";
           console.log(data);
-
-          // Redirect after 2 seconds
           setTimeout(() => {
             window.location.href = "/login.html";
           }, 2000);
