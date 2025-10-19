@@ -61,7 +61,7 @@
 
   <script>
     const SUPABASE_URL = "https://hncqtajrwyveyyliszbv.supabase.co";
-    const SUPABASE_KEY = "sb_secret_pkKWla9bUskrXtpwE55Ppw_hMEb4s6n"; // Using your key
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhuY3F0YWpyd3l2ZXl5bGlzemJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3NDYzNDAsImV4cCI6MjA3NjMyMjM0MH0.bacRHbmPn5tlFQY5XjBmDa4ALzTxc4aTAWFN_mLsIeI";
 
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const form = document.getElementById("signup-form");
@@ -72,26 +72,20 @@
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
-      try {
-        const { data, error } = await supabase.auth.signUp({
-          email: email,
-          password: password,
-          options: {
-            emailRedirectTo: window.location.origin + "/login.html"
-          }
-        });
-
-        if (error) {
-          message.textContent = error.message;
-          message.style.color = "red";
-        } else {
-          message.textContent = "Signup successful! Please check your email to verify your account.";
-          message.style.color = "lightgreen";
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: window.location.origin + "/login.html"
         }
-      } catch (err) {
-        message.textContent = "An unexpected error occurred.";
+      });
+
+      if (error) {
+        message.textContent = error.message;
         message.style.color = "red";
-        console.error(err);
+      } else {
+        message.textContent = "Signup successful! Check your email to verify your account.";
+        message.style.color = "lightgreen";
       }
     });
   </script>
