@@ -25,44 +25,23 @@
       max-width: 400px;
       text-align: center;
     }
-    h1 {
-      margin-bottom: 0.5rem;
-      font-size: 1.8rem;
-    }
-    p {
-      opacity: 0.8;
-      margin-bottom: 1.5rem;
-    }
+    h1 { margin-bottom: 0.5rem; font-size: 1.8rem; }
+    p { opacity: 0.8; margin-bottom: 1.5rem; }
     input {
-      width: 100%;
-      padding: 0.8rem;
-      margin: 0.4rem 0;
-      border: none;
-      border-radius: 0.6rem;
-      background: #333;
-      color: white;
+      width: 100%; padding: 0.8rem; margin: 0.4rem 0;
+      border: none; border-radius: 0.6rem;
+      background: #333; color: white;
     }
     button {
-      width: 100%;
-      padding: 0.9rem;
-      border: none;
+      width: 100%; padding: 0.9rem; border: none;
       background: linear-gradient(90deg, #00c6ff, #0072ff);
-      color: white;
-      border-radius: 0.6rem;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 1rem;
+      color: white; border-radius: 0.6rem;
+      font-weight: bold; cursor: pointer; margin-top: 1rem;
     }
-    button:hover {
-      opacity: 0.9;
-    }
-    .switch {
-      margin-top: 1rem;
-    }
-    a {
-      color: #00c6ff;
-      text-decoration: none;
-    }
+    button:hover { opacity: 0.9; }
+    .switch { margin-top: 1rem; }
+    a { color: #00c6ff; text-decoration: none; }
+    #message { margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -76,15 +55,13 @@
       <button type="submit">Sign Up</button>
     </form>
 
-    <p class="switch">
-      Already have an account? <a href="login.html">Login</a>
-    </p>
+    <p class="switch">Already have an account? <a href="login.html">Login</a></p>
     <p id="message"></p>
   </div>
 
   <script>
     const SUPABASE_URL = "https://hncqtajrwyveyyliszbv.supabase.co";
-    const SUPABASE_KEY = "sb_secret_pkKWla9bUskrXtpwE55Ppw_hMEb4s6n"; // placeholder
+    const SUPABASE_KEY = "sb_secret_pkKWla9bUskrXtpwE55Ppw_hMEb4s6n"; // Using your key
 
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const form = document.getElementById("signup-form");
@@ -95,14 +72,26 @@
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            emailRedirectTo: window.location.origin + "/login.html"
+          }
+        });
 
-      if (error) {
-        message.textContent = error.message;
+        if (error) {
+          message.textContent = error.message;
+          message.style.color = "red";
+        } else {
+          message.textContent = "Signup successful! Please check your email to verify your account.";
+          message.style.color = "lightgreen";
+        }
+      } catch (err) {
+        message.textContent = "An unexpected error occurred.";
         message.style.color = "red";
-      } else {
-        message.textContent = "Signup successful! Please verify your email.";
-        message.style.color = "lightgreen";
+        console.error(err);
       }
     });
   </script>
