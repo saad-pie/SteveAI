@@ -82,16 +82,9 @@
     </form>
   </div>
 
-  <!-- Floating Plus Button -->
-  <div id="featureBtnContainer">
-    <button id="featureBtn" title="More options">＋</button>
-    <div id="featureMenu" hidden>
-      <label>
-        <input type="checkbox" id="websearchToggle">
-        Web Search
-      </label>
-    </div>
-  </div>
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="index.js"></script>
 
   <style>
     body {
@@ -165,58 +158,13 @@
     #commandHints span:hover {
       background: #333;
     }
-
-    /* Floating Plus Button */
-    #featureBtnContainer {
-      position: fixed;
-      right: 20px;
-      bottom: 70px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 6px;
-    }
-    #featureBtn {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: #111;
-      color: #fff;
-      font-size: 28px;
-      border: none;
-      cursor: pointer;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.5);
-      transition: background 0.3s;
-    }
-    #featureBtn:hover { background: #222; }
-    #featureMenu {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      background: #1a1a1a;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid #333;
-    }
-    #featureMenu label {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #fff;
-      cursor: pointer;
-    }
-    body.light #featureMenu { background: #fff; color: #000; border: 1px solid #ccc; }
   </style>
 
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="index.js"></script>
-
   <script>
+    // Use different variable names to avoid colliding with index.js globals
     const inputEl = document.getElementById('messageInput');
     const hintsEl = document.getElementById('commandHints');
 
-    // Show command hints
     inputEl.addEventListener('input', () => {
       hintsEl.hidden = !inputEl.value.trim().startsWith('/');
     });
@@ -228,25 +176,6 @@
         hintsEl.hidden = true;
       };
     });
-
-    // Floating feature button
-    const featureBtn = document.getElementById('featureBtn');
-    const featureMenu = document.getElementById('featureMenu');
-    featureBtn.onclick = () => featureMenu.hidden = !featureMenu.hidden;
-
-    // Prevent form reload and send via index.js
-    const inputForm = document.getElementById('inputForm');
-    inputForm.onsubmit = async (e) => {
-      e.preventDefault();
-      const msg = inputEl.value.trim();
-      if (!msg) return;
-      const webSearch = document.getElementById('websearchToggle').checked;
-      inputEl.value = '';
-      // Call your function in index.js
-      if (typeof handleSend === 'function') {
-        await handleSend(msg, webSearch);
-      }
-    };
   </script>
 </body>
 </html>
