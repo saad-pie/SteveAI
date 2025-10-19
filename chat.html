@@ -161,19 +161,19 @@
   </style>
 
   <script>
-    // Toggle command hints visibility
-    const input = document.getElementById('messageInput');
-    const hints = document.getElementById('commandHints');
+    // Use different variable names to avoid colliding with index.js globals
+    const inputEl = document.getElementById('messageInput');
+    const hintsEl = document.getElementById('commandHints');
 
-    input.addEventListener('input', () => {
-      hints.hidden = !input.value.trim().startsWith('/');
+    inputEl.addEventListener('input', () => {
+      hintsEl.hidden = !inputEl.value.trim().startsWith('/');
     });
 
     document.querySelectorAll('#commandHints span').forEach(span => {
       span.onclick = () => {
-        input.value = span.textContent + ' ';
-        input.focus();
-        hints.hidden = true;
+        inputEl.value = span.textContent + ' ';
+        inputEl.focus();
+        hintsEl.hidden = true;
       };
     });
   </script>
