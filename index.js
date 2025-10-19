@@ -1,5 +1,5 @@
 /* =========================
-   index.js — SteveAI (concise)
+   index.js — SteveAI (concise & updated)
    ========================= */
 
 /* ====== Config ====== */
@@ -12,71 +12,70 @@ const API_KEYS = [
   "ddc-a4f-93af1cce14774a6f831d244f4df3eb9e"
 ];
 
-/* ====== Simple DOM refs ====== */
+/* ====== DOM refs ====== */
 const chat = document.getElementById('chat');
 const form = document.getElementById('inputForm');
 const input = document.getElementById('messageInput');
 const themeToggle = document.getElementById('themeToggle');
 const clearChatBtn = document.getElementById('clearChat');
-const modeSelect = document.getElementById('modeSelect');
+const modeSelect = document.getElementById('modeSelect'); // supports 'chat' | 'reasoning' | 'general'
 
 /* ====== Memory & utils ====== */
 let memory = {}, turn = 0, memorySummary = "";
 const TYPE_DELAY = 2;
 const approxTokens = s => Math.ceil((s || "").length / 4);
 const markdownToHTML = t => marked.parse(t || "");
-
-function memoryString(){
-  return Object.keys(memory).map(k=>`User: ${memory[k].user}\nBot: ${memory[k].bot}`).join('\n');
-}
-function lastTurns(n=6){
-  return Object.keys(memory).map(Number).sort((a,b)=>a-b).slice(-n)
-    .map(k=>`User: ${memory[k].user}\nBot: ${memory[k].bot}`).join('\n');
-}
+function memoryString(){ return Object.keys(memory).map(k=>`User: ${memory[k].user}\nBot: ${memory[k].bot}`).join('\n'); }
+function lastTurns(n=6){ return Object.keys(memory).map(Number).sort((a,b)=>a-b).slice(-n).map(k=>`User: ${memory[k].user}\nBot: ${memory[k].bot}`).join('\n'); }
 function shouldSummarize(){ return !memorySummary && (turn>=6 || approxTokens(memoryString())>2200); }
 
-/* ====== System prompt (merged & concise) ======
-   IMPORTANT: keep exact phrase "Image Generated:" behavior in mind.
-*/
-const SYSTEM_PROMPT = [
-  "You are SteveAI, made by saadpie.",
-  "You have the ability to trigger image generation through the backend (generateImage(prompt)).",
-  "If you want an image generated, do NOT describe, explain, or include URLs. Respond ONLY with:",
-  "Image Generated: <prompt>",
-  "The title MUST be exactly 'Image Generated:' (capital I, capital G, colon included).",
-  "No extra sentences, markdown, emojis, or code. The system will detect that line and generate the image.",
-  "Auto-generate when the user's intent is clearly visual (e.g. 'Show me', 'Create a poster of'). Otherwise suggest instead of auto-generating.",
-  "Be helpful, concise and not spammy."
-].join(' ');
+/* ====== System prompts ====== */
+const SYSTEM_PROMPT_GLOBAL =
+  "You are SteveAI, made by saadpie. You have the ability to trigger image generation through the backend (generateImage(prompt)). " +
+  "If you want an image generated, do NOT describe, explain, or include URLs. Respond ONLY with: Image Generated: <prompt>. " +
+  "The title MUST be exactly 'Image Generated:' (capital I, capital G, colon included). No extra sentences, markdown, emojis, or code. " +
+  "The system will detect that line and generate the image automatically. Auto-generate when the user's intent is clearly visual; otherwise suggest. Be helpful, concise and not spammy.";
+
+const SYSTEM_PROMPT_CHAT = "Friendly, concise assistant. Prioritize clarity and helpfulness. Suggest images when relevant.";
+const SYSTEM_PROMPT_REASONING = "Analytical reasoning mode — be methodical, show steps when needed, be concise in conclusions.";
+const SYSTEM_PROMPT_GENERAL = "General assistant (steveai-general / grok-4-0709): practical, factual, concise, prefer precise answers and step-by-step when requested; avoid hallucination.";
 
 /* ====== Image generation (HTTP fetch) ====== */
 async function generateImage(prompt){
   if(!prompt) throw new Error("No prompt provided");
   const res = await fetch(IMAGE_ENDPOINT, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${API_KEYS[0]}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ model: "provider-4/imagen-4", prompt, n:1, size:"1024x1024" })
+    headers: { 'Authorization': `Bearer ${API_KEYS[0]}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model:"provider-4/imagen-4", prompt, n:1, size:"1024x1024" })
   });
   const data = await res.json();
   return data?.data?.[0]?.url || null;
 }
-window.generateImage = generateImage; // accessible for image.html
+window.generateImage = generateImage;
+
+/* ====== Image gallery (DOM + styles) ====== */
+const gallery = document.createElement('div'); gallery.id = 'imageGallery';
+gallery.style = 'position:fixed;right:12px;bottom:12px;max-width:220px;z-index:9999;display:flex;flex-direction:column;gap:8px;';
+document.body.appendChild(gallery);
+const galleryTitle = document.createElement('div'); galleryTitle.textContent='Gallery'; galleryTitle.style='font-size:12px;color:#fff;opacity:0.8;text-align:center;';
+gallery.appendChild(galleryTitle);
+function addImageToGallery(url){
+  const thumb = document.createElement('img'); thumb.src=url; thumb.style='width:100%;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,0.6);cursor:pointer;';
+  thumb.onclick = ()=> window.open(url,'_blank'); gallery.appendChild(thumb);
+}
 
 /* ====== UI helpers ====== */
-function addMessage(text, sender='bot'){
-  const container = document.createElement('div');
-  container.className = `message-container ${sender}`;
-  const bubble = document.createElement('div'); bubble.className = `bubble ${sender}`;
-  const content = document.createElement('div'); content.className = 'bubble-content';
+function stripHtml(s){ const d=document.createElement('div'); d.innerHTML=s; return d.textContent||d.innerText||''; }
+
+function addMessage(text,sender='bot'){
+  const container = document.createElement('div'); container.className=`message-container ${sender}`;
+  const bubble = document.createElement('div'); bubble.className=`bubble ${sender}`;
+  const content = document.createElement('div'); content.className='bubble-content';
   bubble.appendChild(content); container.appendChild(bubble);
 
-  if(sender==='bot'){
+  if(sender === 'bot'){
     chat.appendChild(container); chat.scrollTop = chat.scrollHeight;
-    // typing animation for plain text only (not HTML)
-    let i=0, buf="";
+    let i=0, buf='';
     (function type(){
       if(i < text.length){
         buf += text[i++]; content.innerHTML = markdownToHTML(buf); chat.scrollTop = chat.scrollHeight;
@@ -108,23 +107,45 @@ function addBotActions(container,bubble,text){
   copy.onclick = ()=>navigator.clipboard.writeText(text);
   const speak = Object.assign(document.createElement('button'),{className:'action-btn',textContent:'🔊',title:'Speak'});
   speak.onclick = ()=>speechSynthesis.speak(new SpeechSynthesisUtterance(stripHtml(text)));
-  actions.appendChild(copy); actions.appendChild(speak); container.appendChild(actions);
+  actions.appendChild(copy); actions.appendChild(speak);
+
+  // attach image controls if dataset present
+  if(container.dataset && container.dataset.prompt){
+    const openBtn = Object.assign(document.createElement('button'),{className:'action-btn',textContent:'🔗',title:'Open image'});
+    openBtn.onclick = ()=> window.open(container.dataset.url,'_blank');
+    const regen = Object.assign(document.createElement('button'),{className:'action-btn',textContent:'🔁',title:'Regenerate'});
+    regen.onclick = async ()=>{
+      try{
+        const p = container.dataset.prompt;
+        addMessage('🔄 Regenerating image...','bot');
+        const newUrl = await generateImage(p);
+        if(!newUrl) return addMessage('⚠️ No image returned.','bot');
+        container.querySelector('.bubble-content').innerHTML = `<img src="${newUrl}" style="max-width:90%;border-radius:10px;margin-top:6px;" />`;
+        container.dataset.url = newUrl;
+      }catch(e){ addMessage('⚠️ Regenerate failed: '+e.message,'bot'); }
+    };
+    const save = Object.assign(document.createElement('button'),{className:'action-btn',textContent:'💾',title:'Save to gallery'});
+    save.onclick = ()=> addImageToGallery(container.dataset.url);
+    actions.appendChild(openBtn); actions.appendChild(regen); actions.appendChild(save);
+  }
+
+  container.appendChild(actions);
 }
 
-function stripHtml(s){ const d=document.createElement('div'); d.innerHTML=s; return d.textContent||d.innerText||''; }
-
-/* Append an image-only bot bubble (NO prompt, NO URL shown) */
-function appendImageBubble(imgUrl){
+/* append image-only bubble (keeps prompt in dataset for regen/save) */
+function appendImageBubble(imgUrl, prompt){
   const container = document.createElement('div'); container.className='message-container bot';
+  container.dataset.prompt = prompt || '';
+  container.dataset.url = imgUrl;
   const bubble = document.createElement('div'); bubble.className='bubble bot';
   const content = document.createElement('div'); content.className='bubble-content';
   content.innerHTML = `<img src="${imgUrl}" alt="AI Image" style="max-width:90%;border-radius:10px;margin-top:6px;" />`;
   bubble.appendChild(content); container.appendChild(bubble);
-  addBotActions(container,bubble,'[Image]');
   chat.appendChild(container); chat.scrollTop = chat.scrollHeight;
+  addBotActions(container,bubble,'[Image]');
 }
 
-/* ====== Fetch AI (rotating keys) ====== */
+/* ====== fetchAI (rotating keys + proxy) ====== */
 async function fetchAI(payload){
   const url = proxied(API_BASE);
   let lastErr='';
@@ -139,11 +160,11 @@ async function fetchAI(payload){
   throw new Error(lastErr||'API error');
 }
 
-/* ====== Summarization (kept minimal) ====== */
+/* ====== Summarize helpers ====== */
 async function generateSummary(){
   const raw = memoryString();
   const payload = { model:"provider-3/gpt-4o-mini", messages:[{role:"system",content:"You are SteveAI, made by saadpie. Summarize the following chat context clearly."},{role:"user",content:raw}] };
-  try { const d = await fetchAI(payload); return d?.choices?.[0]?.message?.content?.trim()||''; } catch { return "Summary: " + lastTurns(2).replace(/\n/g,' ').slice(0,800); }
+  try{ const d = await fetchAI(payload); return d?.choices?.[0]?.message?.content?.trim()||''; }catch{ return "Summary: "+ lastTurns(2).replace(/\n/g,' ').slice(0,800); }
 }
 async function buildContext(){
   if(shouldSummarize()){
@@ -153,18 +174,20 @@ async function buildContext(){
   return memorySummary ? `[SESSION SUMMARY]\n${memorySummary}\n\n[RECENT TURNS]\n${lastTurns(6)}` : memoryString();
 }
 
-/* ====== Chat: get reply and image-detection ====== */
+/* ====== Chat reply + image-detection workflow ====== */
 async function getChatReply(msg){
   const context = await buildContext();
   const mode = (modeSelect?.value || 'chat').toLowerCase();
-  const model = mode==='reasoning' ? "provider-3/deepseek-v3-0324" : "provider-3/gpt-5-nano";
-  const botName = mode==='reasoning' ? "SteveAI-reasoning" : "SteveAI-chat";
+  // model mapping: chat -> gpt-5-nano, reasoning -> deepseek, general -> grok-4-0709
+  const model = mode === 'reasoning' ? "provider-3/deepseek-v3-0324" : (mode === 'general' ? "provider-3/grok-4-0709" : "provider-3/gpt-5-nano");
+  const modePrompt = mode === 'reasoning' ? SYSTEM_PROMPT_REASONING : (mode === 'general' ? SYSTEM_PROMPT_GENERAL : SYSTEM_PROMPT_CHAT);
+  const systemContent = `${SYSTEM_PROMPT_GLOBAL} ${modePrompt}`;
 
   const payload = {
     model,
     messages: [
-      { role:"system", content: `${botName}, made by saadpie. ${SYSTEM_PROMPT}` },
-      { role:"user", content: `${context}\n\nUser: ${msg}` }
+      { role:'system', content: systemContent },
+      { role:'user', content: `${context}\n\nUser: ${msg}` }
     ]
   };
 
@@ -172,25 +195,24 @@ async function getChatReply(msg){
   const reply = data?.choices?.[0]?.message?.content?.trim() || "No response.";
   memory[++turn] = { user: msg, bot: reply };
 
-  // detect "Image Generated:" (case-insensitive)
+  // IMAGE TRIGGER detection
   if(reply && reply.toLowerCase().startsWith('image generated:')){
     const prompt = reply.split(':').slice(1).join(':').trim();
-    if(!prompt){ addMessage('⚠️ Image prompt empty.', 'bot'); return null; }
+    if(!prompt){ addMessage('⚠️ Image prompt empty.','bot'); return null; }
     try{
       const url = await generateImage(prompt);
       if(!url){ addMessage('⚠️ No image returned from server.','bot'); return null; }
-      appendImageBubble(url); // only the image shown
-      return null; // already handled and shown
+      appendImageBubble(url, prompt); // show only image + controls
+      return null; // already handled
     }catch(err){
-      addMessage(`⚠️ Image generation failed: ${err.message}`,'bot');
-      return null;
+      addMessage(`⚠️ Image generation failed: ${err.message}`,'bot'); return null;
     }
   }
 
   return reply;
 }
 
-/* ====== Commands (kept short) ====== */
+/* ====== Commands ====== */
 async function handleCommand(cmd){
   const [command,...args] = cmd.trim().split(' ');
   const argString = args.join(' ');
@@ -201,11 +223,7 @@ async function handleCommand(cmd){
     case '/image':
       if(!argString){ addMessage('⚠️ Usage: /image <prompt>','bot'); return; }
       addMessage(`🎨 Generating image for: ${argString}`,'bot');
-      try{
-        const url = await generateImage(argString);
-        if(!url){ addMessage('⚠️ No image returned.','bot'); return; }
-        appendImageBubble(url);
-      }catch(e){ addMessage(`⚠️ Image failed: ${e.message}`,'bot'); }
+      try{ const url = await generateImage(argString); if(!url){ addMessage('⚠️ No image returned.','bot'); return; } appendImageBubble(url,argString); }catch(e){ addMessage(`⚠️ Image failed: ${e.message}`,'bot'); }
       return;
     case '/export': exportChat(); return;
     case '/contact': showContact(); return;
@@ -217,21 +235,21 @@ async function handleCommand(cmd){
   }
 }
 
-/* ====== UI helpers (theme, clear, export, help...) ====== */
+/* ====== Misc UI helpers ====== */
 function toggleTheme(){ document.body.classList.toggle('light'); addMessage('🌓 Theme toggled.','bot'); }
 function clearChat(){ chat.innerHTML=''; memory={}; memorySummary=''; turn=0; addMessage('🧹 Chat cleared.','bot'); }
 function exportChat(){ const text = memorySummary ? `[SUMMARY]\n${memorySummary}\n\n[CHAT]\n${memoryString()}` : `[CHAT]\n${memoryString()}`; const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'})); a.download=`SteveAI_Chat_${new Date().toISOString().slice(0,19)}.txt`; a.click(); addMessage('💾 Chat exported.','bot'); }
 function showContact(){ addMessage(`**📬 Contact SteveAI**\n- Creator: @saad-pie\n- Website: steve-ai.netlify.app`,'bot'); }
 async function playSummary(){ addMessage('🎬 Generating chat summary...','bot'); if(!memorySummary) memorySummary = await generateSummary(); addMessage(`🧠 **Chat Summary:**\n${memorySummary}`,'bot'); }
 function showAbout(){ addMessage('🤖 SteveAI — built by saadpie.','bot'); }
-function changeMode(arg){ if(!arg || !['chat','reasoning'].includes(arg.toLowerCase())){ addMessage('⚙️ Usage: /mode chat | reasoning','bot'); return; } if(modeSelect) modeSelect.value = arg.toLowerCase(); addMessage(`🧭 Mode: ${arg}`,'bot');}
+function changeMode(arg){ if(!arg || !['chat','reasoning','general'].includes(arg.toLowerCase())){ addMessage('⚙️ Usage: /mode chat | reasoning | general','bot'); return; } if(modeSelect) modeSelect.value = arg.toLowerCase(); addMessage(`🧭 Mode: ${arg}`,'bot'); }
 function showTime(){ addMessage(`⏰ Local time: ${new Date().toLocaleTimeString()}`,'bot'); }
 function showHelp(){ addMessage(`**Commands:** /help /clear /theme /image <prompt> /export /contact /play /about /mode /time`,'bot'); }
 
 /* ====== Chat flow & bindings ====== */
 async function getAndShowReply(msg){
   const reply = await getChatReply(msg);
-  if(reply) addMessage(reply,'bot'); // if null => handled (e.g. image)
+  if(reply) addMessage(reply,'bot');
 }
 
 form.onsubmit = async e => {
@@ -240,10 +258,10 @@ form.onsubmit = async e => {
   if(!msg) return;
   if(msg.startsWith('/')){ await handleCommand(msg); input.value=''; return; }
   addMessage(msg,'user'); input.value=''; input.style.height='auto';
-  try{ await getAndShowReply(msg); } catch(e){ addMessage('⚠️ Request failed. Check console.','bot'); }
+  try{ await getAndShowReply(msg); }catch(e){ addMessage('⚠️ Request failed. Check console.','bot'); }
 };
 
 input.oninput = ()=>{ input.style.height='auto'; input.style.height = input.scrollHeight + 'px'; };
 themeToggle.onclick = ()=>toggleTheme();
 clearChatBtn.onclick = ()=>clearChat();
-
+       
