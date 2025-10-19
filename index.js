@@ -4,7 +4,7 @@ async function generateImage(prompt) {
   if (!prompt) throw new Error("No prompt provided");
 
   try {
-    const response = await fetch("https://api.a4f.co/v1/images/generate", {
+    const response = await fetch("https://api.a4f.co/v1/images/generations", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${API_KEYS[0]}`,
