@@ -1,12 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>SteveAI - Smart AI Assistant</title>
 
-  <!-- SEO + icons omitted for brevity; keep your existing metadata -->
+  <!-- SEO + Icons -->
+  <meta name="description" content="SteveAI is your smart AI assistant for chatting, learning, and creating.">
+  <meta property="og:title" content="SteveAI - Smart AI Assistant">
+  <meta property="og:description" content="Chat with SteveAI: your AI assistant for learning, productivity, and creativity.">
+  <meta name="theme-color" content="#1e1e1e"/>
+  <link rel="icon" href="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s" type="image/png">
+
+  <link rel="preload" href="index.css" as="style">
+  <link rel="preload" href="index.js" as="script">
   <link rel="stylesheet" href="index.css">
+
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -20,56 +29,72 @@
   }
   </script>
 
+  <!-- Thinking styles (kept small — rest in index.css) -->
   <style>
-    /* (existing styles omitted for brevity) -- copy earlier B1 CSS or keep index.css */
-    /* Thinking block styles (option C) */
-    .thinking-block { margin: 6px 0 12px; border-left: 3px solid rgba(255,255,255,0.06); padding-left: 8px; }
-    .thinking-toggle { cursor:pointer; opacity:0.9; font-size:0.92em; user-select:none; color:var(--muted); }
+    /* Collapsible think (C2 -> user chose C2 then E1, but final requested C2->C2 earlier; using C2 arrows visually)
+       Collapsed state (E1 style): ▶ Show thinking  -> expands to ▼ Hide thinking */
+    .thinking-block { margin: 6px 0 12px; padding-left: 8px; }
+    .thinking-toggle { cursor:pointer; opacity:0.9; font-size:0.92em; user-select:none; color:var(--muted); display:inline-block; }
     .thinking-content { max-height:0; overflow:hidden; transition:max-height .28s ease; white-space:pre-wrap; margin-top:6px; border-radius:8px; background: rgba(255,255,255,0.02); padding:0 8px; font-family:monospace; font-size:13px; }
     .thinking-content.expanded { max-height:240px; overflow-y:auto; padding:8px; }
-    /* rest of your UI CSS */
   </style>
 </head>
 <body>
   <div class="app">
+    <!-- Header -->
     <div id="header">
-      <div class="logo"><div class="logo-icon"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s" alt="logo" style="width:100%;height:100%;object-fit:cover;"></div><span>SteveAI</span></div>
+      <div class="logo">
+        <div class="logo-icon">
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s" alt="SteveAI Logo" style="width:100%;height:100%;object-fit:cover;" />
+        </div>
+        <span>SteveAI</span>
+      </div>
+
       <div class="header-actions">
-        <select id="modeSelect">
-          <option value="chat">SteveAI-chat</option>
+        <select id="modeSelect" title="Model Mode">
+          <option value="chat" selected>SteveAI-chat</option>
           <option value="reasoning">SteveAI-reasoning</option>
           <option value="general">SteveAI-general</option>
           <option value="fast">SteveAI-fast</option>
         </select>
-        <button id="memoryToggle" class="action-btn">🧠</button>
-        <button id="clearChat" class="action-btn">🗑️</button>
-        <button id="themeToggle" class="action-btn">🌙</button>
-        <button id="toolsToggle" class="action-btn">➕</button>
+
+        <button id="memoryToggle" class="action-btn" title="Memory (auto summarize)">🧠</button>
+        <button id="clearChat" class="action-btn" title="Clear Chat">🗑️</button>
+        <button id="themeToggle" class="action-btn" title="Toggle Theme">🌙</button>
+        <button id="toolsToggle" class="action-btn" title="Open Tools">➕</button>
       </div>
     </div>
 
+    <!-- Tools Sidebar (left) -->
     <aside id="toolsPanel" aria-label="Tools panel">
       <div class="tools-section">
         <div class="tools-header"><strong>Tools</strong><span style="color:var(--muted);font-size:12px;">Pro</span></div>
+
         <div class="tools-row"><label><input type="checkbox" id="webSearchToggle"/> Web Search</label></div>
+
         <div class="tools-row">
-          <label style="flex:1;display:flex;align-items:center;gap:8px;">Upload File
+          <label style="flex:1;display:flex;align-items:center;gap:8px;">
+            Upload File
             <input type="file" id="fileUploadInput" style="display:none;">
             <button id="filePickBtn" class="action-btn small" style="margin-left:auto;">Browse</button>
           </label>
         </div>
+
         <div class="tools-row">
-          <label>Vision Upload
+          <label style="display:flex;align-items:center;gap:8px;">
+            Vision Upload
             <input type="file" id="visionUploadInput" accept="image/*" style="display:none;">
             <button id="visionPickBtn" class="action-btn small" style="margin-left:auto;">Select Image</button>
           </label>
         </div>
+
         <div style="height:8px;"></div>
         <div style="font-size:13px;color:var(--muted);">Quick actions</div>
+
         <div class="tools-row">
-          <button id="stopBtn" class="action-btn small">⏹️ Stop</button>
-          <button id="exportBtn" class="action-btn small">⬇️ Export</button>
-          <button id="aboutBtn" class="action-btn small">ℹ️</button>
+          <button id="stopBtn" class="action-btn small" title="Stop generation">⏹️ Stop</button>
+          <button id="exportBtn" class="action-btn small" title="Export chat">⬇️ Export</button>
+          <button id="aboutBtn" class="action-btn small" title="About">ℹ️</button>
         </div>
       </div>
 
@@ -82,8 +107,11 @@
       </div>
     </aside>
 
+    <!-- Main chat -->
     <main id="chatContainer">
       <div id="chat" role="log" aria-live="polite"></div>
+
+      <!-- Command hint row -->
       <div id="commandHints" hidden>
         <span>/help</span><span>/clear</span><span>/theme</span>
         <span>/export</span><span>/image</span><span>/contact</span><span>/play</span>
@@ -91,116 +119,24 @@
       </div>
     </main>
 
+    <!-- Gallery (right) -->
     <aside id="imageGallery" aria-label="Image gallery">
       <div class="gallery-title">Gallery</div>
     </aside>
 
+    <!-- Input area -->
     <div id="inputContainer">
       <form id="inputForm" autocomplete="off">
         <textarea id="messageInput" placeholder="Type your message... (use /help)" rows="1" required></textarea>
-        <button type="button" id="toolsToggleMobile">⚙️</button>
-        <button type="submit" id="sendBtn">↩️</button>
+        <button type="button" id="toolsToggleMobile" title="Toggle tools">⚙️</button>
+        <button type="submit" id="sendBtn" title="Send">↩️</button>
       </form>
     </div>
   </div>
 
+  <!-- dependencies (marked) + index.js then chat.js -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script>
-    // UI glue from earlier B1 version (no changes needed)
-    const filePickBtn = document.getElementById('filePickBtn');
-    const fileUploadInput = document.getElementById('fileUploadInput');
-    filePickBtn && filePickBtn.addEventListener('click', () => fileUploadInput.click());
-
-    const visionPickBtn = document.getElementById('visionPickBtn');
-    const visionUploadInput = document.getElementById('visionUploadInput');
-    visionPickBtn && visionPickBtn.addEventListener('click', () => visionUploadInput.click());
-    visionUploadInput && visionUploadInput.addEventListener('change', (e) => {
-      const ev = new Event('vision-upload', { bubbles: true });
-      visionUploadInput.dispatchEvent(ev);
-    });
-
-    const toolsToggle = document.getElementById('toolsToggle');
-    const toolsPanel = document.getElementById('toolsPanel');
-    const toolsToggleMobile = document.getElementById('toolsToggleMobile');
-    function showTools(show){
-      if(window.innerWidth <= 900){
-        toolsPanel.style.display = show ? 'flex' : 'none';
-        toolsPanel.style.flexDirection = 'column';
-      } else {
-        toolsPanel.style.display = 'flex';
-        toolsPanel.style.flexDirection = 'column';
-      }
-    }
-    showTools(window.innerWidth > 900);
-
-    toolsToggle && toolsToggle.addEventListener('click', () => {
-      const isVisible = toolsPanel.style.display === 'flex';
-      toolsPanel.style.display = isVisible ? 'none' : 'flex';
-      toolsPanel.style.flexDirection = 'column';
-    });
-    toolsToggleMobile && toolsToggleMobile.addEventListener('click', () => {
-      const isVisible = toolsPanel.style.display === 'flex';
-      toolsPanel.style.display = isVisible ? 'none' : 'flex';
-      toolsPanel.style.flexDirection = 'column';
-    });
-    window.addEventListener('resize', () => {
-      if(window.innerWidth <= 900) toolsPanel.style.display = 'none'; else toolsPanel.style.display = 'flex';
-    });
-
-    const inputEl = document.getElementById('messageInput');
-    const hintsEl = document.getElementById('commandHints');
-    inputEl && inputEl.addEventListener('input', () => {
-      hintsEl.hidden = !(inputEl.value.trim().startsWith('/'));
-      inputEl.style.height = 'auto';
-      inputEl.style.height = Math.min(200, inputEl.scrollHeight) + 'px';
-    });
-    document.querySelectorAll('#commandHints span').forEach(span => {
-      span.onclick = () => {
-        inputEl.value = span.textContent + ' ';
-        inputEl.focus();
-        hintsEl.hidden = true;
-      };
-    });
-
-    document.getElementById('memoryToggle')?.addEventListener('click', (e) => {
-      e.currentTarget.classList.toggle('active');
-    });
-    document.getElementById('aboutBtn')?.addEventListener('click', () => { alert('SteveAI — built by saadpie.'); });
-    document.getElementById('exportBtn')?.addEventListener('click', () => {
-      if(typeof window.addMessage === 'function') {
-        const form = document.getElementById('inputForm');
-        const prev = inputEl.value;
-        inputEl.value = '/export';
-        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-        inputEl.value = prev;
-      } else alert('Export requested — but chat script not loaded.');
-    });
-
-    if(typeof window.addMessage !== 'function'){
-      window.addMessage = function(txt, sender='bot'){
-        const chat = document.getElementById('chat');
-        if(!chat) return;
-        const container = document.createElement('div'); container.className = `message-container ${sender}`;
-        const bubble = document.createElement('div'); bubble.className = `bubble ${sender}`;
-        const content = document.createElement('div'); content.className = 'bubble-content';
-        content.innerText = txt;
-        bubble.appendChild(content); container.appendChild(bubble);
-        chat.appendChild(container);
-        chat.scrollTop = chat.scrollHeight;
-      };
-    }
-    if(typeof window.addImageToGallery !== 'function'){
-      window.addImageToGallery = function(url){
-        const gallery = document.getElementById('imageGallery');
-        if(!gallery) return;
-        const img = document.createElement('img');
-        img.src = url;
-        img.onclick = ()=> window.open(url, '_blank');
-        gallery.appendChild(img);
-      };
-    }
-  </script>
-
   <script src="index.js"></script>
+  <script src="chat.js"></script>
 </body>
 </html>
