@@ -1,9 +1,7 @@
 /* =========================
-   index.js — SteveAI (concise & updated; analyzer = provider-3/gpt-4.1-nano)
-   - Ultra PDF extraction (C)
-   - Card-style analyzed-file output (2)
-   - Tools panel (A) with Upload File + Web Search
-   - Smart parser (Option A)
+   index.js — SteveAI (updated: Content-Type fix, proxy fallback, improved errors,
+   collapsible <think> blocks for SteveAI-fast (style C), hybrid image behavior)
+   Analyzer = provider-3/gpt-4.1-nano
    ========================== */
 
 /* ====== Config ====== */
@@ -90,19 +88,51 @@ When the user requests an image or describes a visual scene, respond ONLY with:
 Image Generated: <prompt>
 — exactly as written.`;
 
-/* ====== fetchAI (rotating keys + proxy) ====== */
+/* ====== fetchAI (direct-first, proxy-fallback; Content-Type fixed) ====== */
+async function tryFetch(url, options){
+  try{
+    const res = await fetch(url, options);
+    // if status is not ok, read text to get error details
+    if(!res.ok){
+      const t = await res.text();
+      const err = new Error(`HTTP ${res.status}: ${t}`);
+      err.status = res.status;
+      err.body = t;
+      throw err;
+    }
+    return await res.json();
+  }catch(e){ throw e; }
+}
+
 async function fetchAI(payload){
-  const url = proxied(API_BASE);
-  let lastErr='';
-  for(const key of API_KEYS){
-    try{
-      const res = await fetch(url,{method:'POST',headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      if(res.ok) return await res.json();
-      lastErr = await res.text();
-    }catch(e){ console.warn('fetchAI err',e); lastErr = e.message || lastErr; }
+  const opts = {
+    method:'POST',
+    headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${API_KEYS[0]}`},
+    body: JSON.stringify(payload)
+  };
+
+  // Try direct
+  try{
+    return await tryFetch(API_BASE, opts);
+  }catch(primaryErr){
+    console.warn('Direct API call failed, trying proxied route:', primaryErr);
+    // try rotating keys with proxy fallback
+    let lastErr = primaryErr;
+    for(const key of API_KEYS){
+      try{
+        const proxyOpts = {
+          method:'POST',
+          headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${key}`},
+          body: JSON.stringify(payload)
+        };
+        const proxiedUrl = proxied(API_BASE);
+        return await tryFetch(proxiedUrl, proxyOpts);
+      }catch(e){ lastErr = e; console.warn('Proxy attempt failed', e); }
+    }
+    addMessage('⚠️ API error. See console for details.','bot');
+    console.error('All API attempts failed:', lastErr);
+    throw lastErr;
   }
-  addMessage('⚠️ API unreachable. Check keys or proxy.','bot');
-  throw new Error(lastErr||'API error');
 }
 
 /* ====== Firecrawl helper ====== */
@@ -120,18 +150,35 @@ async function getFirecrawlFullContext(userQuery){
   }catch(e){ console.error('Firecrawl error',e); return "Error fetching web content."; }
 }
 
-/* ====== Image generation (HTTP fetch) ====== */
+/* ====== Image generation (HTTP fetch with Content-Type) ====== */
 async function generateImage(prompt){
   if(!prompt) throw new Error("No prompt provided");
-  const res = await fetch(IMAGE_ENDPOINT, {
+  const opts = {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${API_KEYS[0]}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${API_KEYS[0]}` },
     body: JSON.stringify({ model:"provider-4/imagen-4", prompt, n:1, size:"1024x1024" })
-  });
-  const data = await res.json();
-  const url = data?.data?.[0]?.url || null;
-  if(url) addImageToGallery(url);
-  return url;
+  };
+
+  try{
+    // try direct
+    const data = await tryFetch(IMAGE_ENDPOINT, opts);
+    const url = data?.data?.[0]?.url || null;
+    if(url) addImageToGallery(url);
+    return url;
+  }catch(e){
+    // fallback proxied
+    try{
+      const proxiedUrl = proxied(IMAGE_ENDPOINT);
+      const proxyOpts = { ...opts };
+      const data2 = await tryFetch(proxiedUrl, proxyOpts);
+      const url = data2?.data?.[0]?.url || null;
+      if(url) addImageToGallery(url);
+      return url;
+    }catch(e2){
+      console.error('Image generation failed', e2);
+      throw e2;
+    }
+  }
 }
 window.generateImage = generateImage;
 
@@ -188,25 +235,102 @@ function addBotActions(container,bubble,text){
   container.appendChild(actions);
 }
 
-function addMessage(text,sender='bot'){
+/* ====== addMessage with <think> collapsible support for SteveAI-fast (style C) ====== */
+function addMessage(text,sender='bot', meta = {}){
   const container = document.createElement('div'); container.className=`message-container ${sender}`;
   const bubble = document.createElement('div'); bubble.className=`bubble ${sender}`;
   const content = document.createElement('div'); content.className='bubble-content';
   bubble.appendChild(content); container.appendChild(bubble);
 
+  // If bot and contains think blocks and model is fast (meta.model may be provided)
   if(sender === 'bot'){
     chat.appendChild(container); chat.scrollTop = chat.scrollHeight;
-    let i=0, buf='';
-    (function type(){
-      if(i < text.length){
-        buf += text[i++]; content.innerHTML = markdownToHTML(buf); chat.scrollTop = chat.scrollHeight;
-        setTimeout(type, TYPE_DELAY);
-      } else {
-        content.innerHTML = markdownToHTML(text);
+    // handle streaming typing effect but also process think blocks
+    const thinkPattern = /<think>([\s\S]*?)<\/think>/ig;
+    let parts = [];
+    let lastIndex = 0;
+    let m;
+    while((m = thinkPattern.exec(text)) !== null){
+      const before = text.slice(lastIndex, m.index);
+      if(before) parts.push({type:'text', content: before});
+      parts.push({type:'think', content: m[1]});
+      lastIndex = m.index + m[0].length;
+    }
+    const tail = text.slice(lastIndex);
+    if(tail) parts.push({type:'text', content: tail});
+
+    // typing for normal text parts & insert collapsible think blocks collapsed by default
+    let iPart = 0;
+    let buf = '';
+    function processNextPart(){
+      if(iPart >= parts.length){
         addBotActions(container,bubble,text);
+        return;
       }
-    })();
+      const part = parts[iPart++];
+      if(part.type === 'think'){
+        // create collapsed thinking block (style C)
+        const thinkBlock = document.createElement('div');
+        thinkBlock.className = 'thinking-block';
+        const toggle = document.createElement('div');
+        toggle.className = 'thinking-toggle';
+        toggle.textContent = '▼ Show thinking';
+        toggle.style.cursor = 'pointer';
+        toggle.style.opacity = 0.9;
+        toggle.style.fontSize = '0.92em';
+        toggle.style.marginBottom = '6px';
+
+        const pre = document.createElement('pre');
+        pre.className = 'thinking-content';
+        pre.style.margin = '0';
+        pre.style.padding = '8px';
+        pre.style.borderRadius = '8px';
+        pre.style.background = 'rgba(255,255,255,0.02)';
+        pre.style.fontFamily = 'monospace';
+        pre.style.fontSize = '12px';
+        pre.style.maxHeight = '0';
+        pre.style.overflow = 'hidden';
+        pre.textContent = part.content.trim();
+
+        toggle.onclick = () => {
+          const expanded = pre.classList.toggle('expanded');
+          if(expanded){
+            pre.style.maxHeight = '240px';
+            toggle.textContent = '▲ Hide thinking';
+          } else {
+            pre.style.maxHeight = '0';
+            toggle.textContent = '▼ Show thinking';
+          }
+        };
+
+        content.appendChild(thinkBlock);
+        thinkBlock.appendChild(toggle);
+        thinkBlock.appendChild(pre);
+        // next part
+        processNextPart();
+      } else {
+        // type out text part char by char
+        let idx = 0, localBuf = '';
+        (function typeChar(){
+          if(idx < part.content.length){
+            localBuf += part.content[idx++];
+            content.innerHTML = markdownToHTML(buf + localBuf);
+            chat.scrollTop = chat.scrollHeight;
+            setTimeout(typeChar, TYPE_DELAY);
+          } else {
+            // append localBuf to main buffer and continue
+            buf += localBuf;
+            // ensure final HTML
+            content.innerHTML = markdownToHTML(buf);
+            chat.scrollTop = chat.scrollHeight;
+            setTimeout(processNextPart, 80);
+          }
+        })();
+      }
+    }
+    processNextPart();
   } else {
+    // user message - immediate
     content.innerHTML = markdownToHTML(text);
     chat.appendChild(container); chat.scrollTop = chat.scrollHeight;
     addUserActions(container,bubble,text);
@@ -395,10 +519,8 @@ function parseAnalysisFromText(text, fallbackFullText="", detectedToc=[]){
   const normalizedMarkers = markers.map(m => m.replace(/\s+|_/g,'').toUpperCase());
 
   const secs = {};
-  // prepare uppercase version for detection, but keep original for slices
   const upper = caps.toUpperCase();
 
-  // find positions of each marker (the version in text, not normalized)
   const found = [];
   const markerRegex = /\b(SUMMARY|TABLE OF CONTENTS|TABLE OF CONTENT|FULL TEXT|FULL_TEXT|KEY POINTS|KEY_POINTS|KEY POINT|CONCLUSION|CONCLUSIONS|RECOMMENDATIONS|KEY FINDINGS)\b/ig;
   let m;
@@ -407,7 +529,6 @@ function parseAnalysisFromText(text, fallbackFullText="", detectedToc=[]){
   }
 
   if(found.length){
-    // sort by index
     found.sort((a,b)=>a.index-b.index);
     for(let i=0;i<found.length;i++){
       const title = found[i].title;
@@ -416,24 +537,19 @@ function parseAnalysisFromText(text, fallbackFullText="", detectedToc=[]){
       secs[title] = caps.slice(start, end).trim();
     }
   } else {
-    // fallback heuristics: split by common separators like \n\n---\n\n or "---" or double newlines with headings
     const possibleSplit = caps.split(/\n\-{3,}\n|===+\n|^\s*#{1,3}\s+/m);
     if(possibleSplit.length > 1){
-      // put first chunk as summary, rest as full text
       secs['SUMMARY'] = possibleSplit[0].trim();
       secs['FULL TEXT'] = possibleSplit.slice(1).join('\n\n').trim();
     } else {
-      // fallback: put entire thing into SUMMARY (truncated) and use fallbackFullText for FULL TEXT
       secs['SUMMARY'] = caps.slice(0, 4000).trim();
       secs['FULL TEXT'] = fallbackFullText || caps;
     }
   }
 
-  // Normalize keys - try to find specific ones
   const getSection = (keys, def='') => {
     for(const k of keys){
       if(secs[k]) return secs[k].trim();
-      // try slight variants
       const alt = Object.keys(secs).find(sk => sk.replace(/\s|_/g,'').toUpperCase().includes(k.replace(/\s|_/g,'').toUpperCase()));
       if(alt) return secs[alt].trim();
     }
@@ -446,7 +562,6 @@ function parseAnalysisFromText(text, fallbackFullText="", detectedToc=[]){
   const toc = tocText ? tocText.split(/\n+/).map(s=>s.replace(/^\s*[\-\•\*0-9\.\)]+\s*/,'').trim()).filter(Boolean) : detectedToc;
   let keyPointsRaw = getSection(['KEY POINTS','KEY_POINTS','KEY FINDINGS','KEYPOINTS'], '');
   if(!keyPointsRaw){
-    // attempt to capture bullets from SUMMARY or FULL
     const bullets = (summary + '\n' + full).match(/(^|\n)\s*[\-\•\*\u2022]\s+(.+)/g) || (summary + '\n' + full).match(/(^|\n)\s*\d+\.\s+(.+)/g) || [];
     keyPointsRaw = bullets.join('\n');
   }
@@ -454,7 +569,6 @@ function parseAnalysisFromText(text, fallbackFullText="", detectedToc=[]){
 
   let conclusion = getSection(['CONCLUSION','CONCLUSIONS','RECOMMENDATIONS'], '');
   if(!conclusion){
-    // look at last paragraphs of text for a likely conclusion
     const paragraphs = caps.split(/\n{2,}/).map(p=>p.trim()).filter(Boolean);
     conclusion = paragraphs.slice(-3).join('\n\n') || '';
   }
@@ -499,7 +613,7 @@ async function buildContext(){
   return memorySummary ? `[SESSION SUMMARY]\n${memorySummary}\n\n[RECENT TURNS]\n${lastTurns(6)}` : memoryString();
 }
 
-/* ====== Chat reply + image-detection workflow (with hybrid image behavior — Option B merged) ====== */
+/* ====== Chat reply + image-detection workflow (hybrid) ====== */
 async function getChatReply(msg, useWebSearch=false){
   const context = await buildContext();
   const mode = (modeSelect?.value || 'chat').toLowerCase();
@@ -521,7 +635,9 @@ async function getChatReply(msg, useWebSearch=false){
       { role:'system', content: systemContent },
       ...(searchContext ? [{ role:'system', content: `Use the following context to answer the user's question. Do NOT mention the source.\n\n${searchContext}` }] : []),
       { role:'user', content: `${context}\n\nUser: ${msg}` }
-    ]
+    ],
+    temperature: 0.7,
+    max_tokens: 1500
   };
 
   const data = await fetchAI(payload);
@@ -535,8 +651,8 @@ async function getChatReply(msg, useWebSearch=false){
       addMessage('⚠️ Image prompt empty.','bot');
       return null;
     }
-    // Show the assistant reply first (the text reply is already recorded)
-    addMessage(reply,'bot'); // show the textual "Image Generated: ..." line
+    // Show the assistant reply first
+    addMessage(reply,'bot', { model });
     try{
       const url = await generateImage(prompt);
       if(!url){ addMessage('⚠️ No image returned.','bot'); return null; }
@@ -564,8 +680,8 @@ form.onsubmit = async e => {
   addMessage(msg,'user'); input.value=''; input.style.height='auto';
   try{
     const reply = await getChatReply(msg, useWebSearch);
-    if(reply) addMessage(reply,'bot');
-  }catch(e){ console.error(e); addMessage('⚠️ Request failed.','bot'); }
+    if(reply) addMessage(reply,'bot', { model: STEVEAI_MODELS[(modeSelect?.value||'chat')] });
+  }catch(e){ console.error(e); addMessage('⚠️ Request failed. See console.','bot'); }
 };
 
 input.oninput = ()=>{ input.style.height='auto'; input.style.height = input.scrollHeight + 'px'; };
