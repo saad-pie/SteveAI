@@ -26,7 +26,6 @@
   <link rel="preload" href="index.js" as="script">
   <link rel="stylesheet" href="index.css">
 
-  <!-- Structured Data -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -40,93 +39,334 @@
     "description": "Chat with SteveAI — your AI assistant from the future."
   }
   </script>
+
+  <style>
+    /* Base layout */
+    :root {
+      --bg: #0d0d0d;
+      --panel: #0f0f10;
+      --muted: #7f8a95;
+      --accent: #4f9cff;
+      --card: rgba(255,255,255,0.03);
+      --glass: rgba(255,255,255,0.04);
+      --radius: 12px;
+    }
+    html,body { height:100%; margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#fff; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+    .app {
+      display:grid;
+      grid-template-columns: 300px 1fr 260px; /* sidebar - main chat - gallery */
+      grid-template-rows: 64px 1fr 90px;
+      height:100vh;
+      gap:12px;
+    }
+
+    /* Header (spans all columns) */
+    #header {
+      grid-column: 1 / -1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:12px 18px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-bottom:1px solid rgba(255,255,255,0.03);
+      backdrop-filter: blur(4px);
+    }
+    .logo { display:flex; align-items:center; gap:12px; }
+    .logo-icon { width:42px; height:42px; border-radius:8px; overflow:hidden; box-shadow:0 6px 18px rgba(0,0,0,0.6); }
+    .logo span { font-weight:700; letter-spacing:0.6px; }
+
+    .header-actions { display:flex; gap:8px; align-items:center; }
+    select#modeSelect { background:transparent; color:inherit; border:1px solid rgba(255,255,255,0.04); padding:6px 8px; border-radius:8px; }
+    .action-btn { background:transparent; border:1px solid rgba(255,255,255,0.04); padding:8px; border-radius:8px; color:inherit; cursor:pointer; }
+    .action-btn:hover { transform:translateY(-1px); }
+
+    /* Left Sidebar Tools */
+    #toolsPanel {
+      grid-row: 2 / 4;
+      grid-column: 1;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      padding:12px;
+      background:var(--panel);
+      border-right:1px solid rgba(255,255,255,0.03);
+      min-height:0;
+      overflow:auto;
+    }
+    .tools-section { background:var(--card); border-radius:10px; padding:10px; }
+    .tools-header { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+    .tools-row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    .tools-row label { display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none; }
+
+    /* Main chat */
+    #chatContainer {
+      grid-column: 2;
+      grid-row: 2;
+      display:flex;
+      flex-direction:column;
+      height:100%;
+      min-height:0;
+      padding:12px 18px;
+      gap:8px;
+    }
+    #chat {
+      flex:1 1 auto;
+      overflow:auto;
+      padding:8px 4px;
+      border-radius:10px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+      border:1px solid rgba(255,255,255,0.02);
+      min-height:0;
+      scroll-behavior:smooth;
+    }
+
+    /* Messages */
+    .message-container { margin:8px 0; display:flex; }
+    .message-container.user { justify-content:flex-end; }
+    .message-container.bot { justify-content:flex-start; }
+    .bubble { max-width:80%; padding:10px 12px; border-radius:12px; position:relative; }
+    .bubble.bot { background: rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.02); }
+    .bubble.user { background: linear-gradient(90deg, rgba(79,156,255,0.14), rgba(79,156,255,0.08)); border:1px solid rgba(79,156,255,0.12); color:#e8f3ff; }
+    .bubble .bubble-content img { max-width:100%; border-radius:8px; }
+
+    .message-actions { display:flex; gap:6px; margin-top:8px; }
+    .action-btn.small { padding:6px; font-size:13px; }
+
+    /* Input area */
+    #inputContainer {
+      grid-column: 2;
+      grid-row: 3;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:12px 18px;
+      gap:8px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+      border-top:1px solid rgba(255,255,255,0.02);
+    }
+    #inputForm { display:flex; align-items:center; gap:8px; width:100%; max-width:1100px; }
+    #messageInput { width:100%; min-height:40px; max-height:200px; resize:none; padding:12px; border-radius:10px; background: #111; border:1px solid rgba(255,255,255,0.03); color:inherit; font-size:15px; outline:none; }
+    #inputForm button { border-radius:10px; padding:10px 12px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; cursor:pointer; }
+    #toolsToggle { width:44px; height:44px; display:flex; align-items:center; justify-content:center; }
+
+    /* Right gallery */
+    #imageGallery {
+      grid-column: 3;
+      grid-row: 2 / 4;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      align-items:stretch;
+      min-width:0;
+      overflow:auto;
+      border-left:1px solid rgba(255,255,255,0.03);
+      background:var(--panel);
+    }
+    #imageGallery .gallery-title { font-size:12px; color:var(--muted); text-align:center; }
+    #imageGallery img { width:100%; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.6); cursor:pointer; }
+
+    /* Command hints */
+    #commandHints { display:flex; flex-wrap:wrap; gap:8px; padding:8px; justify-content:center; background:transparent; }
+    #commandHints span { background:rgba(255,255,255,0.02); padding:6px 10px; border-radius:8px; cursor:pointer; color:var(--muted); }
+
+    /* Analysis card */
+    .analysis-card { background:var(--card); border:1px solid rgba(255,255,255,0.04); padding:10px; border-radius:10px; white-space:pre-wrap; }
+
+    /* Responsive: collapse sidebar under 900px */
+    @media (max-width: 900px){
+      .app { grid-template-columns: 1fr; grid-template-rows: 64px 1fr 90px; }
+      #toolsPanel { position:fixed; left:12px; top:76px; width:260px; height:calc(100% - 150px); z-index:999; transform:translateX(-8px); box-shadow:0 20px 50px rgba(0,0,0,0.6); display:none; }
+      #chatContainer { grid-column: 1; padding:12px; }
+      #imageGallery { position:fixed; right:12px; bottom:12px; width:220px; max-height:40vh; z-index:1000; display:flex; }
+      #header { padding:8px 12px; }
+    }
+  </style>
 </head>
 
 <body>
-  <!-- Header -->
-  <div id="header">
-    <div class="logo">
-      <div class="logo-icon">
-        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s" 
-             alt="SteveAI Logo" 
-             style="width:100%; height:100%; border-radius:8px; object-fit:cover;">
+  <div class="app">
+    <!-- Header (spans columns) -->
+    <div id="header">
+      <div class="logo">
+        <div class="logo-icon">
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s" alt="SteveAI Logo" style="width:100%;height:100%;object-fit:cover;" />
+        </div>
+        <span>SteveAI</span>
       </div>
-      <span>SteveAI</span>
+
+      <div class="header-actions">
+        <select id="modeSelect" title="Model Mode">
+          <option value="chat" selected>SteveAI-chat</option>
+          <option value="reasoning">SteveAI-reasoning</option>
+          <option value="general">SteveAI-general</option>
+          <option value="fast">SteveAI-fast</option>
+        </select>
+
+        <button id="memoryToggle" class="action-btn" title="Memory (auto summarize)">🧠</button>
+        <button id="clearChat" class="action-btn" title="Clear Chat">🗑️</button>
+        <button id="themeToggle" class="action-btn" title="Toggle Theme">🌙</button>
+        <button id="toolsToggle" class="action-btn" title="Open Tools">➕</button>
+      </div>
     </div>
 
-    <div class="header-actions">
-      <select id="modeSelect" title="Model Mode">
-        <option value="chat" selected>SteveAI-chat</option>
-        <option value="reasoning">SteveAI-reasoning</option>
-        <option value="general">SteveAI-general</option>
-        <option value="fast">SteveAI-fast</option>
-      </select>
+    <!-- Tools Sidebar (persistent on desktop; toggled on mobile) -->
+    <aside id="toolsPanel" aria-label="Tools panel">
+      <div class="tools-section">
+        <div class="tools-header">
+          <strong>Tools</strong>
+          <span style="color:var(--muted);font-size:12px;">Pro</span>
+        </div>
 
-      <button id="clearChat" class="action-btn" title="Clear Chat">🗑️</button>
-      <button id="themeToggle" class="action-btn" title="Toggle Theme">🌙</button>
+        <div class="tools-row">
+          <label title="Use web search with your queries">
+            <input type="checkbox" id="webSearchToggle" style="transform:scale(0.95);" />
+            Web Search
+          </label>
+        </div>
+
+        <div class="tools-row">
+          <label style="flex:1; display:flex; align-items:center; gap:8px;">
+            Upload File
+            <input type="file" id="fileUploadInput" style="display:none;" />
+            <button id="filePickBtn" class="action-btn small" style="margin-left:auto;">Browse</button>
+          </label>
+        </div>
+
+        <div class="tools-row">
+          <label style="display:flex;align-items:center;gap:8px;">
+            Vision Upload
+            <input type="file" id="visionUploadInput" accept="image/*" style="display:none;" />
+            <button id="visionPickBtn" class="action-btn small" style="margin-left:auto;">Select Image</button>
+          </label>
+        </div>
+
+        <div style="height:8px;"></div>
+        <div style="font-size:13px;color:var(--muted);">Quick actions</div>
+
+        <div class="tools-row">
+          <button id="stopBtn" class="action-btn small" title="Stop generation">⏹️ Stop</button>
+          <button id="exportBtn" class="action-btn small" title="Export chat">⬇️ Export</button>
+          <button id="aboutBtn" class="action-btn small" title="About">ℹ️</button>
+        </div>
+      </div>
+
+      <div class="tools-section">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px;">Settings</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="autoSummarizeToggle" />
+            Auto-summarize session
+          </label>
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="compactModeToggle" />
+            Compact messages
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Chat (main area) -->
+    <main id="chatContainer">
+      <div id="chat" role="log" aria-live="polite"></div>
+
+      <!-- Command hint row -->
+      <div id="commandHints" hidden>
+        <span>/help</span><span>/clear</span><span>/theme</span>
+        <span>/export</span><span>/image</span><span>/contact</span><span>/play</span>
+        <span>/about</span><span>/mode</span><span>/time</span>
+      </div>
+    </main>
+
+    <!-- Right: Gallery -->
+    <aside id="imageGallery" aria-label="Image gallery">
+      <div class="gallery-title">Gallery</div>
+      <!-- thumbnails appended by index.js -->
+    </aside>
+
+    <!-- Input area (bottom) -->
+    <div id="inputContainer">
+      <form id="inputForm" autocomplete="off">
+        <textarea id="messageInput" placeholder="Type your message... (use /help for commands)" rows="1" required></textarea>
+        <button type="button" id="toolsToggleMobile" title="Toggle tools">⚙️</button>
+        <button type="submit" id="sendBtn" title="Send">↩️</button>
+      </form>
     </div>
   </div>
 
-  <!-- Chat Area -->
-  <div id="chat"></div>
-
-  <!-- Command Hint Bar -->
-  <div id="commandHints" hidden>
-    <span>/help</span><span>/clear</span><span>/theme</span>
-    <span>/export</span><span>/image</span><span>/contact</span><span>/play</span>
-    <span>/about</span><span>/mode</span><span>/time</span>
-  </div>
-
-  <!-- Input + Tools -->
-  <div id="inputContainer" style="position:relative; display:flex; flex-direction:column; align-items:center; padding:10px; border-top:1px solid #333; background:#111;">
-    <form id="inputForm" style="display:flex; width:100%; align-items:center; justify-content:center;">
-      <textarea id="messageInput" placeholder="Type your message..." rows="1" required></textarea>
-      <button type="button" id="toolsToggle" title="More Tools" style="margin-left:6px;">➕</button>
-      <button type="submit" id="sendBtn" title="Send" style="margin-left:4px;">↑</button>
-    </form>
-
-    <!-- Expandable Tools Panel -->
-    <div id="toolsPanel" style="display:none; position:absolute; bottom:50px; left:50%; transform:translateX(-50%); background:#111; padding:8px; border:1px solid #333; border-radius:8px; z-index:999; min-width:180px; flex-direction:column; gap:6px;">
-      <!-- Web Search -->
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#fff;">
-        <input type="checkbox" id="webSearchToggle" style="transform:scale(0.9);">
-        Web Search
-      </label>
-      <!-- File Upload -->
-      <label style="display:flex;align-items:center;gap:6px;cursor:pointer;color:#fff;">
-        Upload File
-        <input type="file" id="fileUploadInput" style="display:none;">
-      </label>
-    </div>
-  </div>
-
-  <!-- Image Gallery -->
-  <div id="imageGallery" style="position:fixed;right:12px;bottom:12px;max-width:220px;z-index:9999;display:flex;flex-direction:column;gap:8px;">
-    <div style="font-size:12px;color:#fff;opacity:0.8;text-align:center;">Gallery</div>
-  </div>
-
-  <!-- Scripts -->
+  <!-- External scripts required by index.js -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="index.js"></script>
-
-  <style>
-    body { margin:0; background:#0d0d0d; color:#fff; font-family:'Inter',sans-serif; transition:0.3s; }
-    body.light { background:#fafafa; color:#111; }
-    #header { display:flex; justify-content:space-between; align-items:center; padding:10px 16px; background:#111; color:#fff; border-bottom:1px solid #333; }
-    #chat { height:calc(100vh - 160px); overflow-y:auto; padding:20px; scroll-behavior:smooth; }
-    textarea { width:80%; resize:none; background:#1a1a1a; color:#fff; border:1px solid #333; border-radius:10px; padding:10px; font-size:1em; outline:none; transition:all 0.3s ease; }
-    body.light textarea { background:#fff; color:#000; border:1px solid #ccc; }
-    #commandHints { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; background:#181818; padding:6px 0; font-size:0.9em; border-top:1px solid #222; }
-    #commandHints span { background:#222; padding:3px 8px; border-radius:6px; cursor:pointer; user-select:none; }
-    #commandHints span:hover { background:#333; }
-  </style>
-
   <script>
-    // Show command hints on '/' input
+    // ---------- UI glue (keeps in sync with index.js) ----------
+    // file pick buttons wired to the hidden inputs (index.js listens to fileUploadInput change)
+    const filePickBtn = document.getElementById('filePickBtn');
+    const fileUploadInput = document.getElementById('fileUploadInput');
+    filePickBtn && filePickBtn.addEventListener('click', () => fileUploadInput.click());
+
+    const visionPickBtn = document.getElementById('visionPickBtn');
+    const visionUploadInput = document.getElementById('visionUploadInput');
+    visionPickBtn && visionPickBtn.addEventListener('click', () => visionUploadInput.click());
+
+    // When vision image picked, forward to the same file handler (index.js will handle images if fileUploadInput used).
+    // We'll reuse fileUploadInput API by creating a File object clone if necessary; but to avoid duplication we'll
+    // simply dispatch a change event on the global input if the developer chooses to handle vision separately.
+    visionUploadInput && visionUploadInput.addEventListener('change', (e) => {
+      // If index.js provided a handler for visionUploadInput, it will pick it up.
+      // Otherwise, fallback: read and add a user message + thumbnail locally.
+      const f = e.target.files?.[0];
+      if(!f) return;
+      // If index.js expects fileUploadInput, trigger a custom event so it can respond (non-destructive)
+      const ev = new Event('vision-upload', { bubbles: true });
+      visionUploadInput.dispatchEvent(ev);
+    });
+
+    // Toggle tools panel (desktop persistent; mobile toggles visibility)
+    const toolsToggle = document.getElementById('toolsToggle');
+    const toolsPanel = document.getElementById('toolsPanel');
+    const toolsToggleMobile = document.getElementById('toolsToggleMobile');
+    function showTools(show){
+      if(window.innerWidth <= 900){
+        toolsPanel.style.display = show ? 'flex' : 'none';
+        toolsPanel.style.flexDirection = 'column';
+      } else {
+        // keep persistent on desktop
+        toolsPanel.style.display = 'flex';
+        toolsPanel.style.flexDirection = 'column';
+      }
+    }
+    // initial
+    showTools(window.innerWidth > 900);
+
+    // header toggle
+    toolsToggle && toolsToggle.addEventListener('click', () => {
+      const isVisible = toolsPanel.style.display === 'flex';
+      toolsPanel.style.display = isVisible ? 'none' : 'flex';
+      toolsPanel.style.flexDirection = 'column';
+    });
+    toolsToggleMobile && toolsToggleMobile.addEventListener('click', () => {
+      const isVisible = toolsPanel.style.display === 'flex';
+      toolsPanel.style.display = isVisible ? 'none' : 'flex';
+      toolsPanel.style.flexDirection = 'column';
+    });
+
+    // resize listener: auto-collapse on small screens
+    window.addEventListener('resize', () => {
+      if(window.innerWidth <= 900){
+        toolsPanel.style.display = 'none';
+      } else {
+        toolsPanel.style.display = 'flex';
+      }
+    });
+
+    // Command hints behavior
     const inputEl = document.getElementById('messageInput');
     const hintsEl = document.getElementById('commandHints');
-    inputEl.addEventListener('input', () => {
-      hintsEl.hidden = !inputEl.value.trim().startsWith('/');
+    inputEl && inputEl.addEventListener('input', () => {
+      hintsEl.hidden = !(inputEl.value.trim().startsWith('/'));
+      // autosize textarea
+      inputEl.style.height = 'auto';
+      inputEl.style.height = Math.min(200, inputEl.scrollHeight) + 'px';
     });
 
     document.querySelectorAll('#commandHints span').forEach(span => {
@@ -137,39 +377,67 @@
       };
     });
 
-    // Tools Panel
-    const toolsToggle = document.getElementById('toolsToggle');
-    const toolsPanel = document.getElementById('toolsPanel');
-    const fileUploadInput = document.getElementById('fileUploadInput');
-
-    toolsToggle.addEventListener('click', () => {
-      toolsPanel.style.display = toolsPanel.style.display === 'flex' ? 'none' : 'flex';
-      toolsPanel.style.flexDirection = 'column';
+    // wire the header memory & about & export buttons to basic UI hooks (index.js handles main logic)
+    document.getElementById('memoryToggle')?.addEventListener('click', (e) => {
+      e.currentTarget.classList.toggle('active');
     });
-
-    document.addEventListener('click', e => {
-      if (!toolsPanel.contains(e.target) && e.target !== toolsToggle) {
-        toolsPanel.style.display = 'none';
+    document.getElementById('aboutBtn')?.addEventListener('click', () => {
+      alert('SteveAI — built by saadpie.');
+    });
+    document.getElementById('exportBtn')?.addEventListener('click', () => {
+      // delegate to index.js / /export command via input
+      if(typeof window.addMessage === 'function') {
+        // index.js defines addMessage; prefer command route
+        const form = document.getElementById('inputForm');
+        const prev = inputEl.value;
+        inputEl.value = '/export';
+        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        inputEl.value = prev;
+      } else {
+        alert('Export requested — but chat script not loaded.');
       }
     });
 
-    fileUploadInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      handleFileUpload(file);
-      fileUploadInput.value = '';
+    // fileUploadInput change should be handled by index.js; prevent duplicate handlers here.
+    // If index.js isn't loaded yet, our lightweight handler will add a simple user message indicating file selected.
+    fileUploadInput && fileUploadInput.addEventListener('change', (e) => {
+      if(typeof handleFileUpload === 'function') {
+        // index.js exposes handleFileUpload; it will be invoked by its own listener too, so we keep this no-op.
+        return;
+      }
+      const f = e.target.files?.[0];
+      if(f) addMessage(`📄 Uploaded file: ${f.name}`, 'user');
     });
 
-    function handleFileUpload(file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const content = reader.result;
-        addMessage(`📄 Uploaded file: ${file.name}`, 'user');
-        // integrate with AI file analyzer here
+    // small helper so other inline hooks can work (addMessage used before index.js loads)
+    if(typeof window.addMessage !== 'function'){
+      window.addMessage = function(txt, sender='bot'){
+        const chat = document.getElementById('chat');
+        if(!chat) return;
+        const container = document.createElement('div'); container.className = `message-container ${sender}`;
+        const bubble = document.createElement('div'); bubble.className = `bubble ${sender}`;
+        const content = document.createElement('div'); content.className = 'bubble-content';
+        content.innerText = txt;
+        bubble.appendChild(content); container.appendChild(bubble);
+        chat.appendChild(container);
+        chat.scrollTop = chat.scrollHeight;
       };
-      reader.readAsDataURL(file);
+    }
+    // small addImageToGallery shim in case index.js isn't loaded yet
+    if(typeof window.addImageToGallery !== 'function'){
+      window.addImageToGallery = function(url){
+        const gallery = document.getElementById('imageGallery');
+        if(!gallery) return;
+        const img = document.createElement('img');
+        img.src = url;
+        img.onclick = ()=> window.open(url, '_blank');
+        gallery.appendChild(img);
+      };
     }
   </script>
+
+  <!-- Main app script (your index.js) -->
+  <script src="index.js"></script>
 </body>
-        </html>
+</html>
         
