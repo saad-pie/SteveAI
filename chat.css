@@ -1,4 +1,4 @@
-/* chat.css — Combined SteveAI UI (Hybrid + Minimal) */
+/* chat.css — Modern Hybrid SteveAI UI */
 
 /* Reset & base */
 *{box-sizing:border-box;margin:0;padding:0}
@@ -39,6 +39,7 @@ body{
   max-width:var(--maxw);
   margin:0 auto;
   align-items:start;
+  transition:all var(--ui-transition);
 }
 
 /* Header */
@@ -53,6 +54,7 @@ body{
   border-radius:10px;
   border:1px solid rgba(255,255,255,0.03);
   box-shadow:var(--shadow);
+  backdrop-filter:blur(6px);
 }
 .logo{display:flex;align-items:center;gap:12px}
 .logo-icon{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#29d);display:grid;place-items:center;font-weight:700}
@@ -61,8 +63,8 @@ body{
 .header-actions{display:flex;gap:8px;align-items:center}
 
 /* Buttons */
-.btn,.action-btn{background:rgba(255,255,255,0.02);padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);cursor:pointer;transition:all var(--ui-transition)}
-.btn:hover,.action-btn:hover{transform:translateY(-2px)}
+.btn,.action-btn,.plus-btn{background:rgba(255,255,255,0.02);padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);cursor:pointer;transition:all var(--ui-transition)}
+.btn:hover,.action-btn:hover,.plus-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.4)}
 
 /* SIDEBAR / Tools Panel */
 #sidebar,#toolsPanel{
@@ -74,11 +76,12 @@ body{
   border:1px solid rgba(255,255,255,0.03);
   overflow:auto;
   box-shadow:0 8px 20px rgba(2,6,8,0.5);
+  transition:all var(--ui-transition);
 }
 #sidebar h3,#toolsPanel .tools-header{font-size:13px;color:var(--muted);margin-bottom:10px}
 .tools-list,.tools-section{display:flex;flex-direction:column;gap:12px}
-.tool-item,.tools-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.015);cursor:pointer}
-.tool-item:hover{background:rgba(255,255,255,0.015)}
+.tool-item,.tools-row{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.015);cursor:pointer;transition:all var(--ui-transition)}
+.tool-item:hover,.tools-row:hover{background:rgba(255,255,255,0.015);transform:translateX(2px)}
 
 /* Settings / Themes */
 .settings{margin-top:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.02)}
@@ -116,20 +119,22 @@ body{
 /* GALLERY */
 #gallery,#imageGallery{grid-column:3;grid-row:2/4;background:var(--panel);padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);overflow:auto}
 #gallery h4,.gallery-title{margin-bottom:10px;color:var(--muted)}
-.img-preview,#imageGallery img{width:100%;border-radius:8px;margin-bottom:10px;cursor:pointer}
+.img-preview,#imageGallery img{width:100%;border-radius:8px;margin-bottom:10px;cursor:pointer;transition:transform 180ms}
+.img-preview:hover,#imageGallery img:hover{transform:scale(1.03)}
 
 /* COMPOSER / Input */
 #composer,#inputContainer{grid-column:2;grid-row:3;display:flex;align-items:center;justify-content:center;padding:12px;gap:8px}
 .composer-inner,#inputForm{width:100%;max-width:1100px;display:flex;gap:10px;align-items:center}
-.plus-btn{width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,0.02);display:grid;place-items:center;border:1px solid rgba(255,255,255,0.02);cursor:pointer}
 .input-box,#messageInput{flex:1;background:rgba(255,255,255,0.02);padding:10px;border-radius:14px;border:1px solid rgba(255,255,255,0.02);color:inherit;outline:none;font-size:15px;width:100%;min-height:44px;max-height:200px;resize:none}
-.send-btn{background:var(--accent);color:#001;padding:10px 14px;border-radius:12px;border:0;cursor:pointer}
+.send-btn{background:var(--accent);color:#001;padding:10px 14px;border-radius:12px;border:0;cursor:pointer;transition:all var(--ui-transition)}
+.send-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.4)}
 
 /* Command hints */
 #commandHints{display:flex;flex-wrap:wrap;gap:8px;padding:8px;justify-content:center}
-#commandHints span{background:rgba(255,255,255,0.02);padding:6px 10px;border-radius:8px;color:var(--muted);cursor:pointer}
+#commandHints span{background:rgba(255,255,255,0.02);padding:6px 10px;border-radius:8px;color:var(--muted);cursor:pointer;transition:all var(--ui-transition)}
+#commandHints span:hover{background:rgba(255,255,255,0.04)}
 
-/* Themes overrides (classic, iMessage, Material, Terminal) */
+/* Themes overrides */
 .theme-classic{--accent:#4f9cff;--panel:#0f1113;--bg:#0c0c0d}
 .theme-imessage{--accent:#34c759}
 .theme-material{--accent:#29a6f6}
@@ -157,4 +162,3 @@ body{
 .kbd{background:rgba(255,255,255,0.02);padding:6px 8px;border-radius:6px;font-size:12px}
 .fade{transition:opacity var(--ui-transition), transform var(--ui-transition)}
 .small{font-size:13px}
-                                                 
