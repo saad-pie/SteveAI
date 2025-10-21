@@ -1,4 +1,4 @@
-// chat.js — Combined UI Controller for SteveAI
+// chat.js — Hybrid UI Controller for SteveAI
 (function () {
   function init() {
     /* =================== Elements =================== */
@@ -14,16 +14,14 @@
     const helpBtn = document.getElementById('helpBtn');
     const attachBtn = document.getElementById('attach');
     const msgTemplate = document.getElementById('msg-template');
+    const hintsEl = document.getElementById('commandHints');
 
     const filePickBtn = document.getElementById('filePickBtn');
     const fileUploadInput = document.getElementById('fileUploadInput');
     const visionPickBtn = document.getElementById('visionPickBtn');
     const visionUploadInput = document.getElementById('visionUploadInput');
-    const toolsToggle = document.getElementById('toolsToggle');
-    const toolsToggleMobile = document.getElementById('toolsToggleMobile');
-    const toolsPanel = document.getElementById('toolsPanel');
-    const hintsEl = document.getElementById('commandHints');
-    const form = document.getElementById('inputForm');
+
+    const overlay = document.querySelector('.overlay-dark');
 
     const safeFocus = el => { try { el?.focus(); } catch (_) {} };
 
@@ -67,12 +65,19 @@
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); darkToggle.click(); }
     });
 
-    /* =================== Sidebar Mobile =================== */
-    mobileOpen?.addEventListener('click', () => sidebar?.classList.toggle('open'));
-    document.addEventListener('click', e => {
-      if (window.innerWidth <= 980 && sidebar?.classList.contains('open')) {
-        const inside = e.composedPath().includes(sidebar) || e.target === mobileOpen;
-        if (!inside) sidebar.classList.remove('open');
+    /* =================== Sidebar Mobile Slide =================== */
+    mobileOpen?.addEventListener('click', () => {
+      sidebar?.classList.add('open');
+      overlay.style.display = 'block';
+    });
+    overlay?.addEventListener('click', () => {
+      sidebar?.classList.remove('open');
+      overlay.style.display = 'none';
+    });
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 980) {
+        sidebar?.classList.remove('open');
+        overlay.style.display = 'none';
       }
     });
 
@@ -85,7 +90,7 @@
       const meta = tpl.querySelector('.meta');
 
       row.classList.add(who === 'user' ? 'row-user' : 'row-bot');
-      bubble.classList.add(who === 'user' ? 'bubble-user' : 'bubble-bot');
+      bubble.classList.add(who === 'user' ? 'bubble user' : 'bubble bot');
 
       bubble.textContent = text;
       meta.textContent = (who === 'user' ? 'You • ' : 'SteveAI • ') + new Date().toLocaleTimeString();
@@ -94,7 +99,7 @@
       messages.parentElement.scrollTop = messages.scrollHeight - messages.parentElement.clientHeight + 200;
     }
 
-    appendMessage('Welcome to SteveAI — choose Appearance in the left sidebar to switch themes instantly.', 'bot');
+    appendMessage('Welcome to SteveAI — use the sidebar to switch themes or tools.', 'bot');
 
     /* =================== Send / Enter =================== */
     sendBtn?.addEventListener('click', () => {
@@ -105,7 +110,6 @@
       if (typeof window.sendChatMessage === 'function') {
         window.sendChatMessage(v);
       } else {
-        // fallback demo
         setTimeout(() => appendMessage('Received: ' + (v.length > 120 ? v.slice(0, 120) + '…' : v), 'bot'), 650);
       }
     });
@@ -116,7 +120,7 @@
 
     /* =================== Clear / Help / Attach =================== */
     clearBtn?.addEventListener('click', () => { messages.innerHTML = ''; appendMessage('Conversation cleared.', 'bot'); });
-    helpBtn?.addEventListener('click', () => appendMessage('/help — available demo commands: /export /clear /theme', 'bot'));
+    helpBtn?.addEventListener('click', () => appendMessage('/help — demo commands: /export /clear /theme', 'bot'));
     attachBtn?.addEventListener('click', () => appendMessage('Opened upload (demo).', 'bot'));
 
     /* =================== File Picker =================== */
@@ -137,18 +141,7 @@
       });
     }
 
-    /* =================== Tools Toggle =================== */
-    function showTools(show) {
-      if (!toolsPanel) return;
-      toolsPanel.style.display = show ? 'flex' : 'none';
-      toolsPanel.style.flexDirection = 'column';
-    }
-    showTools(window.innerWidth > 900);
-    toolsToggle?.addEventListener('click', () => showTools(toolsPanel.style.display !== 'flex'));
-    toolsToggleMobile?.addEventListener('click', () => showTools(toolsPanel.style.display !== 'flex'));
-    window.addEventListener('resize', () => showTools(window.innerWidth > 900));
-
-    /* =================== Input Autosize + Command Hints =================== */
+    /* =================== Command Hints =================== */
     if (inputEl) {
       inputEl.addEventListener('input', () => {
         hintsEl.hidden = !(inputEl.value.trim().startsWith('/'));
@@ -173,7 +166,7 @@
       } catch (e) {}
     }
 
-    console.debug('chat.js: UI ready');
+    console.debug('chat.js: Hybrid UI ready');
 
     /* =================== Global API =================== */
     window.SteveAI = {
