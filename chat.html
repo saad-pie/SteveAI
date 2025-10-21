@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>SteveAI - Chat</title>
-  <meta name="description" content="SteveAI chat interface" />
+  <meta name="description" content="SteveAI hybrid chat interface — multi-theme, tools, gallery, and advanced input." />
   <link rel="stylesheet" href="chat.css">
 
   <!-- JSON-LD minimal -->
@@ -17,18 +17,17 @@
   }
   </script>
 </head>
-<body>
-  <div class="app">
+<body class="theme-classic">
+  <div class="app" id="app">
 
     <!-- Header -->
-    <div id="header">
+    <header id="header">
       <div class="logo">
-        <div class="logo-icon">
-          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s"
-               alt="logo"
-               style="width:100%;height:100%;object-fit:cover;" />
+        <div class="logo-icon">AI</div>
+        <div>
+          <div class="brand-title">SteveAI</div>
+          <div class="brand-sub muted">Hybrid — Multi-theme chat</div>
         </div>
-        <span>SteveAI</span>
       </div>
 
       <div class="header-actions">
@@ -39,21 +38,19 @@
           <option value="fast">SteveAI-fast</option>
         </select>
         <button id="memoryToggle" class="action-btn">🧠</button>
-        <button id="clearChat" class="action-btn">🗑️</button>
+        <button id="clearBtn" class="btn">Clear</button>
         <button id="themeToggle" class="action-btn">🌙</button>
-        <button id="toolsToggle" class="action-btn">➕</button>
+        <button class="btn open-sidebar" id="mobileOpen" aria-label="Open sidebar">☰</button>
       </div>
-    </div>
+    </header>
 
-    <!-- Tools -->
-    <aside id="toolsPanel" aria-label="Tools panel">
-      <div class="tools-section">
-        <div class="tools-header"><strong>Tools</strong></div>
-
+    <!-- Sidebar / Tools -->
+    <aside id="sidebar" aria-label="Tools and settings" tabindex="-1">
+      <div class="tools-list">
+        <h3>Tools</h3>
         <div class="tools-row">
           <label><input type="checkbox" id="webSearchToggle"/> Web Search</label>
         </div>
-
         <div class="tools-row">
           <label style="flex:1;display:flex;align-items:center;gap:8px;">
             Upload File
@@ -61,7 +58,6 @@
             <button id="filePickBtn" class="action-btn small" style="margin-left:auto;">Browse</button>
           </label>
         </div>
-
         <div class="tools-row">
           <label>
             Vision Upload
@@ -70,16 +66,49 @@
           </label>
         </div>
 
-        <div style="height:8px;"></div>
-        <div style="font-size:13px;color:#9aa6b2;">Quick actions</div>
+        <!-- Appearance / Themes -->
+        <div class="settings">
+          <h3>Appearance</h3>
+          <div class="theme-cards" id="themeCards">
+            <button class="theme-card selected" data-theme="classic" aria-pressed="true">
+              <div class="card-preview classic-preview"></div>
+              <div class="card-label">Classic</div>
+            </button>
+            <button class="theme-card" data-theme="imessage">
+              <div class="card-preview imessage-preview"></div>
+              <div class="card-label">iMessage</div>
+            </button>
+            <button class="theme-card" data-theme="material">
+              <div class="card-preview material-preview"></div>
+              <div class="card-label">Material</div>
+            </button>
+            <button class="theme-card" data-theme="terminal">
+              <div class="card-preview terminal-preview"></div>
+              <div class="card-label">Terminal</div>
+            </button>
+          </div>
 
-        <div class="tools-row">
+          <div class="mode-row">
+            <div class="muted">Dark Mode</div>
+            <div class="toggle" id="darkToggle" role="switch" aria-checked="false" tabindex="0">
+              <div class="switch" id="switch"><div class="knob"></div></div>
+            </div>
+          </div>
+          <div class="muted small">Theme saved locally — applies instantly.</div>
+        </div>
+
+        <div class="about">
+          <h3>About</h3>
+          <div class="muted small">SteveAI — one app, many looks. Toggle themes quickly in Settings.</div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="tools-row" style="margin-top:12px;">
           <button id="stopBtn" class="action-btn small">⏹️ Stop</button>
           <button id="exportBtn" class="action-btn small">⬇️ Export</button>
           <button id="aboutBtn" class="action-btn small">ℹ️</button>
         </div>
 
-        <div style="margin-top:12px;font-size:13px;color:#9aa6b2;">Settings</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
           <label><input type="checkbox" id="autoSummarizeToggle" /> Auto-summarize session</label>
           <label><input type="checkbox" id="compactModeToggle" /> Compact messages</label>
@@ -87,9 +116,11 @@
       </div>
     </aside>
 
-    <!-- Chat -->
+    <!-- Chat center -->
     <main id="chatContainer">
-      <div id="chat" role="log" aria-live="polite"></div>
+      <section id="chatCard" aria-live="polite">
+        <div class="messages" id="messages" role="log" aria-relevant="additions"></div>
+      </section>
 
       <div id="commandHints" hidden>
         <span>/help</span><span>/clear</span><span>/theme</span>
@@ -99,24 +130,35 @@
     </main>
 
     <!-- Gallery -->
-    <aside id="imageGallery" aria-label="Image gallery">
-      <div class="gallery-title">Gallery</div>
+    <aside id="gallery" aria-label="Images">
+      <h4>Image Gallery</h4>
+      <img class="img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='360'><rect width='100%' height='100%' fill='%23111111'/><text x='50%' y='50%' fill='%239aa6b2' font-size='22' text-anchor='middle' dominant-baseline='middle'>No images yet</text></svg>" alt="placeholder">
     </aside>
 
-    <!-- Input -->
-    <div id="inputContainer">
-      <form id="inputForm" autocomplete="off">
-        <textarea id="messageInput" placeholder="Type your message... (use /help)" rows="1" required></textarea>
-        <button type="button" id="toolsToggleMobile">⚙️</button>
-        <button type="submit" id="sendBtn">↩️</button>
-      </form>
-    </div>
+    <!-- Composer -->
+    <footer id="composer">
+      <div class="composer-inner">
+        <button class="plus-btn" id="attach" aria-label="Attachment">+</button>
+        <div class="input-box">
+          <textarea id="messageInput" placeholder="Type a message... (try /help)" aria-label="Message input"></textarea>
+        </div>
+        <button class="send-btn" id="sendBtn">Send</button>
+      </div>
+    </footer>
   </div>
 
-  <!-- Markdown support -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- message template -->
+  <template id="msg-template">
+    <div class="msg-row">
+      <div class="message"></div>
+      <div class="meta muted"></div>
+    </div>
+  </template>
 
-  <!-- ✅ Correct dependency order -->
+  <div class="overlay-dark" aria-hidden="true"></div>
+
+  <!-- Dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script type="module" src="./config.js"></script>
   <script type="module" src="./utils.js"></script>
   <script type="module" src="./dom.js"></script>
