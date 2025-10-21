@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>SteveAI - Chat</title>
-  <meta name="description" content="SteveAI hybrid chat interface — multi-theme, tools, gallery, and advanced input." />
+  <meta name="description" content="SteveAI chat interface" />
   <link rel="stylesheet" href="chat.css">
 
   <!-- JSON-LD minimal -->
@@ -23,10 +23,14 @@
     <!-- Header -->
     <header id="header">
       <div class="logo">
-        <div class="logo-icon">AI</div>
+        <div class="logo-icon">
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKfhnr8aWFyvTRT3x_MKFK_YgsWp3tVCiGf_9wkOElaQ&s"
+               alt="logo"
+               style="width:100%;height:100%;object-fit:cover;" />
+        </div>
         <div>
           <div class="brand-title">SteveAI</div>
-          <div class="brand-sub muted">Hybrid — Multi-theme chat</div>
+          <div class="brand-sub muted">Hybrid — Multi-mode chat</div>
         </div>
       </div>
 
@@ -37,40 +41,26 @@
           <option value="general">SteveAI-general</option>
           <option value="fast">SteveAI-fast</option>
         </select>
-        <button id="memoryToggle" class="action-btn">🧠</button>
-        <button id="clearBtn" class="btn">Clear</button>
-        <button id="themeToggle" class="action-btn">🌙</button>
-        <button class="btn open-sidebar" id="mobileOpen" aria-label="Open sidebar">☰</button>
+        <button id="memoryToggle" class="btn">🧠</button>
+        <button id="clearChat" class="btn">🗑️</button>
+        <button id="themeToggle" class="btn">🌙</button>
+        <button class="btn open-sidebar" id="toolsToggleMobile">➕</button>
       </div>
     </header>
 
-    <!-- Sidebar / Tools -->
-    <aside id="sidebar" aria-label="Tools and settings" tabindex="-1">
+    <!-- Sidebar: Tools + Settings -->
+    <aside id="toolsPanel" aria-label="Tools panel" tabindex="-1">
       <div class="tools-list">
         <h3>Tools</h3>
-        <div class="tools-row">
-          <label><input type="checkbox" id="webSearchToggle"/> Web Search</label>
-        </div>
-        <div class="tools-row">
-          <label style="flex:1;display:flex;align-items:center;gap:8px;">
-            Upload File
-            <input type="file" id="fileUploadInput" style="display:none;">
-            <button id="filePickBtn" class="action-btn small" style="margin-left:auto;">Browse</button>
-          </label>
-        </div>
-        <div class="tools-row">
-          <label>
-            Vision Upload
-            <input type="file" id="visionUploadInput" accept="image/*" style="display:none;">
-            <button id="visionPickBtn" class="action-btn small" style="margin-left:auto;">Select Image</button>
-          </label>
-        </div>
+        <button class="tool-item">📎 Upload File</button>
+        <button class="tool-item">🌐 Web Search</button>
+        <button class="tool-item">🖼️ Image Gen</button>
+        <button class="tool-item">🧩 Plugins</button>
 
-        <!-- Appearance / Themes -->
         <div class="settings">
           <h3>Appearance</h3>
           <div class="theme-cards" id="themeCards">
-            <button class="theme-card selected" data-theme="classic" aria-pressed="true">
+            <button class="theme-card selected" data-theme="classic">
               <div class="card-preview classic-preview"></div>
               <div class="card-label">Classic</div>
             </button>
@@ -94,6 +84,7 @@
               <div class="switch" id="switch"><div class="knob"></div></div>
             </div>
           </div>
+
           <div class="muted small">Theme saved locally — applies instantly.</div>
         </div>
 
@@ -101,26 +92,12 @@
           <h3>About</h3>
           <div class="muted small">SteveAI — one app, many looks. Toggle themes quickly in Settings.</div>
         </div>
-
-        <!-- Quick Actions -->
-        <div class="tools-row" style="margin-top:12px;">
-          <button id="stopBtn" class="action-btn small">⏹️ Stop</button>
-          <button id="exportBtn" class="action-btn small">⬇️ Export</button>
-          <button id="aboutBtn" class="action-btn small">ℹ️</button>
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px;">
-          <label><input type="checkbox" id="autoSummarizeToggle" /> Auto-summarize session</label>
-          <label><input type="checkbox" id="compactModeToggle" /> Compact messages</label>
-        </div>
       </div>
     </aside>
 
     <!-- Chat center -->
     <main id="chatContainer">
-      <section id="chatCard" aria-live="polite">
-        <div class="messages" id="messages" role="log" aria-relevant="additions"></div>
-      </section>
+      <div id="chat" class="messages" role="log" aria-live="polite"></div>
 
       <div id="commandHints" hidden>
         <span>/help</span><span>/clear</span><span>/theme</span>
@@ -130,24 +107,22 @@
     </main>
 
     <!-- Gallery -->
-    <aside id="gallery" aria-label="Images">
-      <h4>Image Gallery</h4>
+    <aside id="imageGallery" aria-label="Image gallery">
+      <div class="gallery-title">Gallery</div>
       <img class="img-preview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='360'><rect width='100%' height='100%' fill='%23111111'/><text x='50%' y='50%' fill='%239aa6b2' font-size='22' text-anchor='middle' dominant-baseline='middle'>No images yet</text></svg>" alt="placeholder">
     </aside>
 
-    <!-- Composer -->
-    <footer id="composer">
-      <div class="composer-inner">
+    <!-- Composer/Input -->
+    <footer id="inputContainer">
+      <form id="inputForm" autocomplete="off">
         <button class="plus-btn" id="attach" aria-label="Attachment">+</button>
-        <div class="input-box">
-          <textarea id="messageInput" placeholder="Type a message... (try /help)" aria-label="Message input"></textarea>
-        </div>
-        <button class="send-btn" id="sendBtn">Send</button>
-      </div>
+        <textarea id="messageInput" placeholder="Type your message... (use /help)" rows="1" required></textarea>
+        <button type="submit" id="sendBtn">↩️</button>
+      </form>
     </footer>
   </div>
 
-  <!-- message template -->
+  <!-- Message template -->
   <template id="msg-template">
     <div class="msg-row">
       <div class="message"></div>
@@ -157,8 +132,10 @@
 
   <div class="overlay-dark" aria-hidden="true"></div>
 
-  <!-- Dependencies -->
+  <!-- Markdown support -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- ✅ Correct dependency order -->
   <script type="module" src="./config.js"></script>
   <script type="module" src="./utils.js"></script>
   <script type="module" src="./dom.js"></script>
