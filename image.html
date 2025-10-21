@@ -7,8 +7,6 @@
   <meta name="author" content="SteveAI by saadpie" />
   <meta name="theme-color" content="#111" />
   <title>SteveAI – Image Generator</title>
-  
-  <!-- Favicon -->
   <link rel="icon" href="/assets/favicon.png" />
 
   <style>
@@ -38,6 +36,8 @@
     }
     main {
       padding: 2em;
+      max-width: 800px;
+      margin: auto;
     }
     input, button {
       border: none;
@@ -46,8 +46,9 @@
       font-size: 1em;
     }
     input {
-      width: 60%;
+      width: 80%;
       margin-bottom: 1em;
+      max-width: 500px;
     }
     button {
       background: #ffae00;
@@ -78,14 +79,21 @@
   <main>
     <h1>🖼️ SteveAI Image Generator</h1>
     <p>Enter a prompt below to generate an AI image.</p>
+
     <input type="text" id="prompt" placeholder="e.g. A cute baby sea otter" />
     <br />
     <button id="generateBtn">Generate</button>
+
     <div id="result"></div>
   </main>
-  <script type="module" src="/index.js"></script>
+
+  <!-- ✅ Correct dependency order -->
+  <script type="module" src="./config.js"></script>
+  <script type="module" src="./utils.js"></script>
+  <script type="module" src="./dom.js"></script> <!-- not used here, but harmless for consistency -->
+  <script type="module" src="./index.js"></script>
+
   <script type="module">
-  
     const generateBtn = document.getElementById("generateBtn");
     const promptInput = document.getElementById("prompt");
     const resultDiv = document.getElementById("result");
@@ -102,7 +110,6 @@
           resultDiv.innerHTML = `<p style="color:red;">Error: No image returned.</p>`;
           return;
         }
-
         resultDiv.innerHTML = `
           <img src="${imageUrl}" alt="Generated Image">
           <p><a href="${imageUrl}" target="_blank">Open in new tab</a></p>
