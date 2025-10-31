@@ -1,10 +1,44 @@
-<!-- Same head/nav as index -->
-<main class="chat-container">
-    <div id="messages"></div>
-    <form id="chat-form">
-        <textarea id="prompt" placeholder="Ask SteveAI..."></textarea>
-        <button type="submit">Send</button>
-    </form>
-</main>
-<script src="chat.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SteveAI Chat</title>
+    <link rel="stylesheet" href="../style.css">  <!-- Adjust paths as needed -->
+</head>
+<body>
+    <nav><!-- Your nav here --></nav>
+    <main class="chat-container">
+        <div id="messages"></div>
+        <form id="chat-form">
+            <textarea id="prompt" placeholder="Chat with SteveAI... (Try /help)"></textarea>
+            <button type="submit">Send</button>
+        </form>
+    </main>
+    <script type="module">
+        import { getBotAnswer, loadTheme } from './functions/chat.js';  // Path from html
 
+        loadTheme();  // Init theme
+
+        document.getElementById('chat-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const prompt = document.getElementById('prompt').value.trim();
+            if (!prompt) return;
+
+            addMessage('user', prompt);
+            document.getElementById('prompt').value = '';
+
+            const reply = await getBotAnswer(prompt);
+            if (reply) addMessage('ai', reply);
+        });
+
+        function addMessage(sender, text) {
+            const div = document.createElement('div');
+            div.className = `message ${sender}`;
+            div.innerHTML = `<strong>${sender.toUpperCase()}:</strong> ${text.replace(/\n/g, '<br>')}`;
+            document.getElementById('messages').appendChild(div);
+            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+        }
+    </script>
+</body>
+</html>
