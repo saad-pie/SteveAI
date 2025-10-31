@@ -2,6 +2,7 @@
 /* Designed to feel like a neural-interface bot from 2047 */
 /* Updates: Added .content wrapper for typing animation, .generating orb for loading */
 /* New: Collapsible <think> matrix (.msg-header, .arrow, .msg-think) with neon glow toggles; smooth max-height transitions for futuristic slide. */
+/* Sidebar: Fixed left panel with toggle dropdown for model selection – holographic neon list. */
 
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Roboto+Mono:wght@300;400;500&display=swap');
 
@@ -39,6 +40,112 @@ body {
   height: 100vh;
   overflow: hidden;
   position: relative;
+}
+
+/* Sidebar – Neural Mode Selector */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 280px;
+  background: rgba(10, 10, 26, 0.9);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(0, 247, 255, 0.2);
+  z-index: 20;
+  transform: translateX(-100%);
+  transition: transform var(--anim-medium);
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 1rem;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: transparent;
+  border: none;
+  color: var(--neon-cyan);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 8px;
+  transition: all var(--anim-fast);
+  text-shadow: var(--text-glow);
+  margin-bottom: 1rem;
+}
+
+.sidebar-toggle:hover {
+  box-shadow: var(--glow-primary);
+  transform: scale(1.02);
+}
+
+.icon {
+  font-size: 1.2rem;
+}
+
+.label {
+  letter-spacing: 1px;
+}
+
+.dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--anim-medium) ease-out;
+  opacity: 0;
+}
+
+.sidebar.open .dropdown {
+  max-height: 400px;
+  opacity: 1;
+  transition-delay: 0.1s;
+}
+
+.dropdown-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem;
+  background: rgba(255, 0, 255, 0.05);
+  border: 1px solid rgba(0, 247, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--anim-fast);
+  color: #e0faff;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.dropdown-item:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: var(--glow-primary);
+  transform: translateX(5px);
+}
+
+.mode-icon {
+  font-size: 1.2rem;
+  color: var(--neon-magenta);
+}
+
+.mode-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.95rem;
+  color: var(--neon-cyan);
+  letter-spacing: 0.5px;
+}
+
+.mode-desc {
+  font-size: 0.8rem;
+  color: rgba(0, 247, 255, 0.6);
+  font-style: italic;
 }
 
 /* Animated Background Grid */
@@ -88,16 +195,21 @@ body {
   100% { transform: translateY(-100px) translateX(100px); opacity: 0; }
 }
 
-/* Main Chat Container */
+/* Main Chat Container (shifted for sidebar) */
 .chat-container {
   position: relative;
   z-index: 10;
   height: 100vh;
   display: flex;
   flex-direction: column;
-  max-width: 900px;
+  max-width: calc(900px + 280px);  /* Account for sidebar width */
   margin: 0 auto;
-  padding: 1rem;
+  padding: 1rem 1rem 1rem 300px;  /* Left padding for sidebar */
+  transition: padding-left var(--anim-medium);
+}
+
+.sidebar.open ~ .chat-container {
+  padding-left: 1rem;  /* Collapse padding when sidebar open? Wait, no – sidebar slides over */
 }
 
 /* Header – Neural Link Status */
@@ -488,4 +600,7 @@ body {
   .input-wrapper { padding: 0.6rem 1rem; }
   .msg-header { font-size: 0.8rem; }
   .arrow { font-size: 0.7rem; }
+  .sidebar { width: 100%; transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .chat-container { padding-left: 0; }
 }

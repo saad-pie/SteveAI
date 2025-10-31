@@ -2,6 +2,7 @@
 // Integrates with functions/chat.js for backend responses (with fallback if import fails)
 // Features: Markdown rendering via Marked.js, typewriter animation (ultra-fast 2ms fixed, LIVE formatting on every char for dynamic bold/italics/etc. as it types)
 // Updates: Parses <think> blocks from Gemini/fast mode – Renders as futuristic collapsible "Neural Thought Matrix" (arrow-toggle, glow on hover). Main response always visible. Strips for history.
+// New: Sidebar model selector – Toggle button opens holographic dropdown; selects trigger /model command for seamless switch (no history clutter via direct export if avail, else command).
 
 let getBotAnswer;  // Declare globally for fallback
 
@@ -11,8 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const messagesEl = document.getElementById('messages');
   const userInput = document.getElementById('user-input');
   const sendBtn = document.getElementById('send-btn');
+  const sidebar = document.getElementById('sidebar');
+  const sidebarToggle = document.getElementById('sidebar-toggle');
+  const modelDropdown = document.getElementById('model-dropdown');
+  const statusBar = document.querySelector('.status-bar');
 
-  if (!messagesEl || !userInput || !sendBtn) {
+  if (!messagesEl || !userInput || !sendBtn || !sidebar || !sidebarToggle) {
     console.error('🚨 SteveAI: Critical – DOM elements missing! Check IDs in chat.html.');
     return;  // Bail if selectors fail
   }
@@ -33,11 +38,53 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   });
 
+  // Sidebar Toggle
+  sidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+    const isOpen = sidebar.classList.contains('open');
+    sidebarToggle.innerHTML = `<span class="icon">${isOpen ? '✕' : '⚙️'}</span><span class="label">${isOpen ? 'Close' : 'Neural Modes'}</span>`;
+    console.log(`🧠 SteveAI: Sidebar ${isOpen ? 'opened' : 'closed'}.`);
+  });
+
+  // Model Selection – Click item to switch (triggers /model command silently, no history add)
+  modelDropdown.addEventListener('click', async (e) => {
+    if (e.target.closest('.dropdown-item')) {
+      const item = e.target.closest('.dropdown-item');
+      const mode = item.dataset.mode;
+      console.log(`🧠 SteveAI: Model selected – ${mode}`);
+      // Trigger model switch via command (handled in functions/chat.js – returns response for UI toast)
+      const response = await getBotAnswer(`/model ${mode}`);
+      // Show toast-like confirmation (main response)
+      if (response.main) {
+        const toast = document.createElement('div');
+        toast.className = 'model-toast';
+        toast.textContent = response.main;
+        toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,247,255,0.9); color: #000; padding: 1rem; border-radius: 8px; box-shadow: 0 0 20px var(--neon-cyan); z-index: 30; animation: slideIn 0.5s;';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+      // Close sidebar
+      sidebar.classList.remove('open');
+      sidebarToggle.innerHTML = '<span class="icon">⚙️</span><span class="label">Neural Modes</span>';
+      // Update status bar with current mode (fetch from localStorage or config)
+      const currentModel = localStorage.getItem('steveai_current_model') || 'provider-3/gpt-5-nano';
+      statusBar.innerHTML += `<span style="color: var(--neon-purple); font-size: 0.7rem;"> | Mode: ${mode.toUpperCase()}</span>`;
+    }
+  });
+
+  // Close sidebar on outside click
+  document.addEventListener('click', (e) => {
+    if (!sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+      sidebar.classList.remove('open');
+      sidebarToggle.innerHTML = '<span class="icon">⚙️</span><span class="label">Neural Modes</span>';
+    }
+  });
+
   // Set initial state: Button ENABLED (user can type/send immediately; disable on empty via input)
   sendBtn.disabled = false;  // Start enabled – input listener handles
   console.log('🧠 SteveAI: Send button enabled (initial).');
 
-  // Enable/disable send button when typing (redundant if always enabled, but safe)
+  // Enable/disable send button when typing
   userInput.addEventListener('input', () => {
     const hasValue = userInput.value.trim() !== '';
     sendBtn.disabled = !hasValue;
@@ -95,13 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       if (typeof getBotAnswer === 'function') {
         console.log('🧠 SteveAI: Calling real getBotAnswer...');
-        const rawReply = await getBotAnswer(prompt);
-        // Parse for <think> (now returned as object from updated functions/chat.js)
-        if (typeof rawReply === 'object' && rawReply.main && rawReply.thinking) {
-          responseData = rawReply;
-        } else {
-          responseData.main = rawReply;  // Backward compat if no think
-        }
+        responseData = await getBotAnswer(prompt);
         console.log('🧠 SteveAI: Real response received:', responseData.main ? 'Success' : 'Empty');
       } else {
         console.log('🧠 SteveAI: Skipping getBotAnswer (undefined) – Using mock.');
@@ -251,3 +292,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   console.log('🧠 SteveAI: Interface online – Ready for transmission!');
 });
+
+// Add slideIn keyframe for toast
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .model-toast { animation: slideIn 0.5s ease-out; }
+`;
+document.head.appendChild(style);

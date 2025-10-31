@@ -7,6 +7,36 @@
   <link rel="stylesheet" href="chat.css" />
 </head>
 <body>
+  <!-- Sidebar for Model Selection -->
+  <div class="sidebar" id="sidebar">
+    <button class="sidebar-toggle" id="sidebar-toggle">
+      <span class="icon">⚙️</span>
+      <span class="label">Neural Modes</span>
+    </button>
+    <div class="dropdown" id="model-dropdown">
+      <div class="dropdown-item" data-mode="default">
+        <span class="mode-icon">⚡</span>
+        <span class="mode-name">Default (GPT-5 Nano)</span>
+        <span class="mode-desc">Balanced baseline</span>
+      </div>
+      <div class="dropdown-item" data-mode="general">
+        <span class="mode-icon">🧠</span>
+        <span class="mode-name">General (Grok-4)</span>
+        <span class="mode-desc">Creative horizons</span>
+      </div>
+      <div class="dropdown-item" data-mode="fast">
+        <span class="mode-icon">🚀</span>
+        <span class="mode-name">Fast (Gemini Flash)</span>
+        <span class="mode-desc">Rapid queries</span>
+      </div>
+      <div class="dropdown-item" data-mode="reasoning">
+        <span class="mode-icon">🔍</span>
+        <span class="mode-name">Reasoning (DeepSeek V3)</span>
+        <span class="mode-desc">Logic chains</span>
+      </div>
+    </div>
+  </div>
+
   <div class="bg-grid"></div>
   <div class="particles" id="particles"></div>
 
