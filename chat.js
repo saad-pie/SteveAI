@@ -5,23 +5,28 @@
 // New: Individual Chats – Sidebar lists chats (by title/preview), + New creates fresh (timestamp ID), select loads without re-render (append-only). No global history reload. Model sidebar separate toggle.
 // Grok-Style Update: Unified sidebar toggle via hamburger, AI-generated chat titles on first msg (via SteveAI-default), auto-gen on load, models integrated in sidebar.
 // FIX: Import config for model refs; pass model to getBotAnswer for title gen; update mock; better statusBar mode display.
-// ADDITIONAL FIXES (Halloween 2025): Commands instant (no orb hang via local handler), model default clamp/switch local (no AI ping), tab isolation (sessionStorage msgs), thinking persistence/collapse consistent, orb clear guarantee, sidebar init/highlight, inline toggles, single getBotAnswer call (no dupe), consistent classes (content-main/content-think).
+// ADDITIONAL FIXES (Halloween 2025): Commands instant (no orb hang via local handler), model default clamp/switch local (no AI ping), tab isolation (sessionStorage msgs), thinking persistence/collapse consistent, orb clear guarantee, sidebar init/highlight, inline toggles, single getBotAnswer call (no dupe), components integration (sidebar, message, loader, toast, chatlist).
 
-import config from './config.js';  // NEW: Import for model mappings
+import config from './config.js';  // Models + params
+import { getBotAnswer, loadTheme, clearSession } from './functions/chat.js';  // Backend
+import { Sidebar } from './components/sidebar.js';  // Toggle + models
+import { Message } from './components/message.js';  // User/bot render
+import { Loader } from './components/loader.js';  // Orb
+import { Toast } from './components/toast.js';  // Notifications
+import { ChatList } from './components/chatlist.js';  // List render
 
-let getBotAnswer;  // Declare globally for fallback
-let currentModel = localStorage.getItem('steveai_current_model') || config.models.default;  // Use config default
-if (!Object.values(config.models).includes(currentModel)) {  // Sanitize stuck 'fast'
+let currentModel = localStorage.getItem('steveai_current_model') || config.models.default;  // Clamp to default
+if (!Object.values(config.models).includes(currentModel)) {
   currentModel = config.models.default;
   localStorage.setItem('steveai_current_model', currentModel);
 }
-let currentChatId = localStorage.getItem('steveai_current_chat') || 'chat-1';  // Default first chat
-// Tab-isolated chats (shared titles/previews, local messages)
+let currentChatId = localStorage.getItem('steveai_current_chat') || 'chat-1';
+// Tab-isolated chats
 const tabId = sessionStorage.getItem('steveai_tab_id') || `tab-${Date.now()}`;
 sessionStorage.setItem('steveai_tab_id', tabId);
-let sharedChats = JSON.parse(localStorage.getItem('steveai_chats') || '[]');  // Titles only
-let tabChats = JSON.parse(sessionStorage.getItem(`steveai_tab_chats_${tabId}`) || JSON.stringify(sharedChats.map(c => ({ ...c, messages: [] }))));  // Local copy
-let chats = tabChats;  // Use tab-local for ops
+let sharedChats = JSON.parse(localStorage.getItem('steveai_chats') || '[]');
+let tabChats = JSON.parse(sessionStorage.getItem(`steveai_tab_chats_${tabId}`) || JSON.stringify(sharedChats.map(c => ({ ...c, messages: [] }))));
+let chats = tabChats;
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🧠 SteveAI: DOM Loaded – Initializing neural interface...');
@@ -39,88 +44,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!messagesEl || !userInput || !sendBtn || !sidebar || !newChatBtn) {
     console.error('🚨 SteveAI: Critical – DOM elements missing! Check IDs in chat.html.');
-    return;  // Bail if selectors fail
+    return;
   }
 
-  // FIX: Sidebar init closed + icon hovers
-  sidebar.classList.remove('open');
-  sidebarOverlay.style.display = 'none';
-  const dropdownItems = document.querySelectorAll('.dropdown-item');
-  dropdownItems.forEach(item => {
-    item.addEventListener('mouseenter', () => item.style.boxShadow = '0 0 10px var(--neon-cyan)');
-    item.addEventListener('mouseleave', () => item.style.boxShadow = 'none');
+  // Components Init
+  const toast = new Toast();
+  const sidebarComp = new Sidebar(sidebar, hamburgerToggle, sidebarOverlay, modelDropdown, (mode) => {
+    currentModel = config.models[mode];
+    localStorage.setItem('steveai_current_model', currentModel);
+    statusBar.textContent = `Mode: ${mode.toUpperCase()}`;
+    toast.show(`Switched to ${mode.toUpperCase()}`);
   });
+  sidebarComp.mount();
 
-  console.log('🧠 SteveAI: Elements found – Attaching listeners.');
+  const chatListComp = new ChatList(chatList, chats, currentChatId, switchToChat, deleteChat);
 
-  // Attempt import (async for modules)
+  // Initial highlight
+  const initialMode = Object.keys(config.models).find(key => config.models[key] === currentModel) || 'default';
+  statusBar.textContent = `Mode: ${initialMode.toUpperCase()}`;
+
+  // Theme load
+  loadTheme();
+
+  console.log('🧠 SteveAI: Components wired – Attaching listeners.');
+
+  // Attempt import (async)
   import('./functions/chat.js').then(module => {
     getBotAnswer = module.getBotAnswer;
-    console.log('🧠 SteveAI: Import success – getBotAnswer loaded.');
+    console.log('🧠 SteveAI: Backend loaded.');
   }).catch(error => {
-    console.error('🚨 SteveAI: Import failed:', error);
-    console.error('🚨 SteveAI: Check: 1) functions/chat.js exists? 2) config.js in root? 3) Syntax errors? 4) Netlify MIME for .js (add _headers: /*\nContent-Type: application/javascript\n)');
-    // Mock fallback for testing – UPDATED: Handle model param + handled flag
+    console.error('🚨 SteveAI: Backend import failed:', error);
     getBotAnswer = async (prompt, messages = [], model = null) => {
-      console.log('🧠 SteveAI: Using MOCK response (import failed).');
-      return { main: `Echo: "${prompt}" – Neural link offline. Fix import for real AI! (Debug: Check console for details.)`, thinking: null, handled: false };
+      return { main: `Echo: "${prompt}" – Link offline. Fix import!`, thinking: null, handled: false };
     };
   });
 
-  // Sidebar Toggle (Grok-style hamburger)
-  function toggleSidebar() {
-    sidebar.classList.toggle('open');
-    const isOpen = sidebar.classList.contains('open');
-    if (isOpen) {
-      sidebarOverlay.style.display = 'block'; // Show overlay
-    } else {
-      sidebarOverlay.style.display = 'none';
-    }
-  }
-
-  hamburgerToggle.addEventListener('click', toggleSidebar);
-  sidebarOverlay.addEventListener('click', () => {
-    sidebar.classList.remove('open');
-    sidebarOverlay.style.display = 'none';
-  });
-
-  // Model Selection (in unified sidebar) – FIXED: Local only (no AI call, instant)
-  modelDropdown.addEventListener('click', (e) => {
-    if (e.target.closest('.dropdown-item')) {
-      const mode = e.target.closest('.dropdown-item').dataset.mode;
-      currentModel = config.models[mode];
-      localStorage.setItem('steveai_current_model', currentModel);
-      console.log(`🧠 SteveAI: Model selected – ${mode} (${currentModel})`);
-      // Toast confirmation (simplified)
-      const toast = document.createElement('div');
-      toast.className = 'model-toast';
-      toast.textContent = `Switched to ${mode.toUpperCase()}`;
-      toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,247,255,0.9); color: #000; padding: 1rem; border-radius: 8px; box-shadow: 0 0 20px var(--neon-cyan); z-index: 30; animation: slideIn 0.5s; font-family: Orbitron, monospace;';
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 2000);
-      // Update status – UPDATED: Use mode key
-      statusBar.textContent = `Mode: ${mode.toUpperCase()}`;
-      // Close sidebar
-      toggleSidebar();
-      // Highlight active
-      dropdownItems.forEach(i => i.style.background = 'none');
-      e.target.closest('.dropdown-item').style.background = 'rgba(0,247,255,0.2)';
-    }
-  });
-
-  // Initial highlight for default
-  const initialMode = Object.keys(config.models).find(key => config.models[key] === currentModel) || 'default';
-  const initialItem = modelDropdown.querySelector(`[data-mode="${initialMode}"]`);
-  if (initialItem) initialItem.style.background = 'rgba(0,247,255,0.2)';
-
-  // Local command handler (for instant, no getBotAnswer call)
+  // Local command handler
   function handleCommand(prompt) {
     if (!prompt.startsWith('/')) return { handled: false };
     const [, cmd, ...args] = prompt.split(' ');
     let main = '';
     switch (cmd.toLowerCase()) {
       case 'clear':
-        clearSession();  // From functions
+        clearSession();
         main = 'Chat wiped—fresh timeline activated! 🚀';
         break;
       case 'help':
@@ -140,13 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
           currentModel = config.models[mode];
           localStorage.setItem('steveai_current_model', currentModel);
           statusBar.textContent = `Mode: ${mode.toUpperCase()}`;
-          // Toast
-          const toast = document.createElement('div');
-          toast.className = 'model-toast';
-          toast.textContent = `Switched to ${mode.toUpperCase()}`;
-          toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,247,255,0.9); color: #000; padding: 1rem; border-radius: 8px; box-shadow: 0 0 20px var(--neon-cyan); z-index: 30; animation: slideIn 0.5s;';
-          document.body.appendChild(toast);
-          setTimeout(() => toast.remove(), 2000);
+          toast.show(`Switched to ${mode.toUpperCase()}`);
           main = `Mode switched to **${mode.toUpperCase()}** (${currentModel}) – Neural pathways recalibrated! 🚀`;
         }
         break;
@@ -165,67 +125,55 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
       case 'image':
         const imgPrompt = prompt.slice(7).trim();
-        main = imgPrompt ? `Image gen queued for "${imgPrompt}" (feature incoming—stay tuned!)` : 'Usage: /image <your prompt here>';
+        main = imgPrompt ? `Image gen queued for "${imgPrompt}" (coming soon!)` : 'Usage: /image <prompt>';
         break;
       default:
-        main = 'Unknown command—type /help for options. (Pro tip: I\'m forgiving.)';
+        main = 'Unknown command—type /help for options.';
     }
     return { handled: true, response: { main, thinking: null } };
   }
 
-  // NEW: Generate AI Title for Chat (uses SteveAI-default via param, short prompt)
+  // Title gen
   async function generateChatTitle(firstPrompt, chatId) {
     const titlePrompt = `Generate a short, catchy, futuristic title (5-8 words max) for this chat based solely on: "${firstPrompt}". Respond with ONLY the title, no extras.`;
     const messages = [{ role: 'system', content: 'You are a title generator. Output only the title.' }];
-    // Pass model param to getBotAnswer (no global override)
-    const response = await getBotAnswer(titlePrompt, messages, config.models.default);  // FIXED: Pass default model
-    const generatedTitle = response.main.trim() || `Chat ${chats.length + 1}`; // Fallback
-    // Update chat
+    const response = await getBotAnswer(titlePrompt, messages, config.models.default);
+    const generatedTitle = response.main.trim() || `Chat ${chats.length + 1}`;
     const chat = chats.find(c => c.id === chatId);
     if (chat) {
       chat.title = generatedTitle;
       chat.titleGenerated = true;
       saveChats();
-      loadChatList(); // Refresh UI
+      chatListComp.render();
     }
     return generatedTitle;
   }
 
-  // Individual Chats Logic (tab-local)
+  // Chats Logic
   function initChats() {
-    if (chats.length === 0) {
-      createNewChat();
-    }
-    // Check for pending title gens on load – UPDATED: Better placeholder check
+    if (chats.length === 0) createNewChat();
     chats.forEach(async (chat) => {
-      if (!chat.hasOwnProperty('titleGenerated') || !chat.titleGenerated) {  // Handle legacy chats
+      if (!chat.hasOwnProperty('titleGenerated') || !chat.titleGenerated) {
         if (chat.title && (chat.title.startsWith('Chat ') || chat.title === 'New Sync...')) {
           const lastUserMsg = chat.messages.findLast(m => m.role === 'user')?.content || 'New conversation';
           await generateChatTitle(lastUserMsg, chat.id);
         }
       }
     });
-    loadChatList();
+    chatListComp.render();
     loadCurrentChat();
   }
 
   function createNewChat() {
     const newId = `chat-${Date.now()}`;
-    const newChat = {
-      id: newId,
-      title: `New Sync...`, // Temp
-      preview: 'Awaiting transmission...',
-      messages: [], // Empty for truly new
-      titleGenerated: false
-    };
+    const newChat = { id: newId, title: 'New Sync...', preview: 'Awaiting transmission...', messages: [], titleGenerated: false };
     chats.push(newChat);
     saveChats();
     switchToChat(newId);
   }
 
   function saveChats() {
-    sessionStorage.setItem(`steveai_tab_chats_${tabId}`, JSON.stringify(chats));  // Local full
-    // Merge titles/previews to shared (strip messages)
+    sessionStorage.setItem(`steveai_tab_chats_${tabId}`, JSON.stringify(chats));
     sharedChats = sharedChats.map(sc => {
       const tc = chats.find(c => c.id === sc.id);
       return tc ? { ...tc, messages: [] } : sc;
@@ -233,39 +181,20 @@ document.addEventListener('DOMContentLoaded', () => {
     localStorage.setItem('steveai_chats', JSON.stringify(sharedChats));
   }
 
-  function loadChatList() {
-    chatList.innerHTML = '';
-    chats.forEach(chat => {
-      const li = document.createElement('li');
-      li.className = `chat-item ${currentChatId === chat.id ? 'active' : ''}`;
-      li.innerHTML = `
-        <div class="chat-preview" onclick="switchToChat('${chat.id}')">
-          <span class="chat-title">${chat.title}</span>
-          <span class="chat-snippet">${chat.preview}</span>
-        </div>
-        <button class="delete-chat" onclick="deleteChat('${chat.id}')">×</button>
-      `;
-      chatList.appendChild(li);
-    });
-  }
-
   function switchToChat(chatId) {
     if (currentChatId) {
-      // Save current chat state
       const currentChat = chats.find(c => c.id === currentChatId);
       if (currentChat) {
-        currentChat.messages = Array.from(messagesEl.children).map(el => ({
-          role: el.classList.contains('user') ? 'user' : 'assistant',
-          content: el.querySelector('.content, .content-main, .content-think')?.textContent || el.textContent || '',
-          thinking: el.querySelector('.content-think')?.textContent || null  // Extract thinking
-        })).filter(msg => msg.role && msg.content.trim());  // Extract clean
-        // Update preview/title based on last user msg (skip if AI-generated)
+        currentChat.messages = Array.from(messagesEl.children).map(el => {
+          const role = el.classList.contains('user') ? 'user' : 'assistant';
+          const content = el.querySelector('.content, .content-main, .content-think')?.textContent || el.textContent || '';
+          const thinking = el.querySelector('.content-think')?.textContent || null;
+          return { role, content, thinking };
+        }).filter(msg => msg.role && msg.content.trim());
         const lastUser = currentChat.messages.findLast(m => m.role === 'user');
         if (lastUser) {
           currentChat.preview = lastUser.content.substring(0, 50) + '...';
-          if (!currentChat.titleGenerated) {
-            currentChat.title = lastUser.content.substring(0, 30) + (lastUser.content.length > 30 ? '...' : '');
-          }
+          if (!currentChat.titleGenerated) currentChat.title = lastUser.content.substring(0, 30) + (lastUser.content.length > 30 ? '...' : '');
         }
         saveChats();
       }
@@ -273,72 +202,50 @@ document.addEventListener('DOMContentLoaded', () => {
     currentChatId = chatId;
     localStorage.setItem('steveai_current_chat', chatId);
     loadCurrentChat();
-    loadChatList();
+    chatListComp.render();
     console.log(`🧠 SteveAI: Switched to chat ${chatId}.`);
   }
 
   function loadCurrentChat() {
-    messagesEl.innerHTML = '';  // Clear without re-render loop
+    messagesEl.innerHTML = '';
     const currentChat = chats.find(c => c.id === currentChatId);
     if (!currentChat) return createNewChat();
-    currentChat.messages.forEach(msg => {  // Handle thinking obj
-      let msgEl;
-      if (msg.role === 'assistant' && msg.thinking) {
-        msgEl = createMessage(msg.role, { content: msg.content, thinking: msg.thinking });
-      } else {
-        msgEl = createMessage(msg.role, msg.content);
-      }
-      messagesEl.appendChild(msgEl);
+    currentChat.messages.forEach(msg => {
+      const div = document.createElement('div');
+      new Message(div, msg.role, msg).render();
+      messagesEl.appendChild(div);
     });
     scrollToBottom();
     if (currentChat.messages.length === 0) {
-      // Welcome for truly new
       const welcomeDiv = document.createElement('div');
-      welcomeDiv.className = 'message bot';
-      const welcomeContent = document.createElement('div');
-      welcomeContent.className = 'content';
-      welcomeContent.innerHTML = marked.parse('Neural link established. Transmit your query, operative. **What futures do you seek?**');
-      welcomeDiv.appendChild(welcomeContent);
+      new Message(welcomeDiv, 'bot', { content: 'Neural link established. Transmit your query, operative. **What futures do you seek?**' }).render();
       messagesEl.appendChild(welcomeDiv);
       scrollToBottom();
     }
   }
 
   function deleteChat(chatId) {
-    if (chats.length <= 1) return;  // Keep at least one
+    if (chats.length <= 1) return;
     chats = chats.filter(c => c.id !== chatId);
-    if (currentChatId === chatId) {
-      currentChatId = chats[0]?.id || createNewChat();
-    }
+    if (currentChatId === chatId) currentChatId = chats[0]?.id || createNewChat();
     saveChats();
-    loadChatList();
+    chatListComp.render();
     loadCurrentChat();
   }
 
-  // Event Listeners for Chats
   newChatBtn.addEventListener('click', createNewChat);
 
-  // Set initial state: Button ENABLED
+  // Input listeners
   sendBtn.disabled = false;
-  // UPDATED: Better initial status from config reverse-map
-  statusBar.textContent = `Mode: ${initialMode.toUpperCase()}`;
-  console.log('🧠 SteveAI: Send button enabled (initial).');
-
-  // Enable/disable send button when typing
-  userInput.addEventListener('input', () => {
-    const hasValue = userInput.value.trim() !== '';
-    sendBtn.disabled = !hasValue;
-  });
-
-  // Send on Enter
+  userInput.addEventListener('input', () => sendBtn.disabled = userInput.value.trim() === '');
   userInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !sendBtn.disabled) {
       e.preventDefault();
-      if (!sendBtn.disabled) sendBtn.click();
+      sendBtn.click();
     }
   });
 
-  // Send handler (append to current chat only)
+  // Send handler
   sendBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     const prompt = userInput.value.trim();
@@ -351,29 +258,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentChat = chats.find(c => c.id === currentChatId);
     const isFirstMessage = currentChat.messages.length === 0;
 
-    // Add user message (append, no re-render)
-    const userMsg = createMessage('user', prompt);
-    messagesEl.appendChild(userMsg);
+    // User msg
+    const userDiv = document.createElement('div');
+    new Message(userDiv, 'user', prompt).render();
+    messagesEl.appendChild(userDiv);
     scrollToBottom();
 
-    let responseData = { main: 'Transmission error—retry vector?', thinking: null, handled: false };
-
-    // FIX: Early command check (no orb for handled)
+    // Local cmd or loader + API
     const commandResult = handleCommand(prompt);
     if (commandResult.handled) {
-      responseData = commandResult.response;
-    } else {
-      // Else: Normal AI (orb + stream/type)
-      // Generating orb
-      const botMsg = document.createElement('div');
-      botMsg.className = 'message bot';
-      botMsg.innerHTML = `<div class="generating"><div class="orb"></div><span>Syncing neural net... (Quantum processing)</span></div>`;
-      messagesEl.appendChild(botMsg);
+      const sysDiv = document.createElement('div');
+      new Message(sysDiv, 'bot', commandResult.response.main).render();
+      sysDiv.querySelector('.content').classList.add('system');
+      messagesEl.appendChild(sysDiv);
       scrollToBottom();
-
+      currentChat.messages.push({ role: 'user', content: prompt });
+      currentChat.messages.push({ role: 'assistant', content: commandResult.response.main });
+    } else {
+      const loader = new Loader(messagesEl);
+      loader.show();
+      let responseData = { main: 'Transmission error—retry vector?', thinking: null, handled: false };
       try {
         if (typeof getBotAnswer === 'function') {
-          responseData = await getBotAnswer(prompt, currentChat.messages, currentModel);  // Single call
+          responseData = await getBotAnswer(prompt, currentChat.messages, currentModel);
         } else {
           responseData.main = `Mock: Hi back! "${prompt}" – Interface glitching?`;
         }
@@ -381,187 +288,42 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('🚨 SteveAI: getBotAnswer Error:', error);
         responseData.main = 'Signal lost. Rebooting interface...';
       } finally {
-        // FIX: Guarantee orb clear
-        const genDiv = botMsg.querySelector('.generating');
-        if (genDiv) botMsg.innerHTML = '';
-        renderBotResponse(botMsg, responseData);
+        loader.hide();
+        const botDiv = document.createElement('div');
+        new Message(botDiv, 'bot', responseData).render();
+        messagesEl.appendChild(botDiv);
+        currentChat.messages.push({ role: 'user', content: prompt });
+        currentChat.messages.push({ role: 'assistant', content: responseData.main, thinking: responseData.thinking });
       }
     }
 
-    // Unified save/render (cmd or normal)
-    currentChat.messages.push({ role: 'user', content: prompt });
-    if (responseData.handled) {
-      // Cmd: Plain content
-      currentChat.messages.push({ role: 'assistant', content: responseData.main });
-      const sysMsg = createMessage('bot', responseData.main);
-      sysMsg.querySelector('.content-main, .content').classList.add('system');
-      messagesEl.appendChild(sysMsg);
-    } else {
-      // Normal: Full w/ thinking
-      currentChat.messages.push({ role: 'assistant', content: responseData.main, thinking: responseData.thinking });
-    }
-    scrollToBottom();
-
-    // If first, gen title
-    if (isFirstMessage) {
-      await generateChatTitle(prompt, currentChatId);
-    } else {
-      currentChat.preview = prompt.substring(0, 50) + '...';
-    }
+    // Title/preview
+    if (isFirstMessage) await generateChatTitle(prompt, currentChatId);
+    else currentChat.preview = prompt.substring(0, 50) + '...';
     saveChats();
-    loadChatList();  // Refresh list preview
-
+    chatListComp.render();
     sendBtn.disabled = false;
   });
 
-  // Render bot response (as before) – FIXED: Inline toggle, smooth collapse
-  function renderBotResponse(botMsg, { main, thinking }) {
-    let html = `<div class="msg-main"><div class="content-main"></div></div>`;
-    if (thinking) {
-      html = `
-        <div class="msg-header" style="cursor: pointer;">
-          <span class="arrow">▶</span>
-          <span class="header-text">Neural Thought Matrix [Collapsed]</span>
-        </div>
-        <div class="msg-think" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
-          <div class="content-think"></div>
-        </div>
-      ` + html;
-    }
-    botMsg.innerHTML = html;
-    const mainContent = botMsg.querySelector('.content-main');
-    typeWriter(mainContent, main, 0, '', () => {
-      if (thinking) {
-        const thinkContent = botMsg.querySelector('.content-think');
-        thinkContent.innerHTML = marked.parse(thinking);
-        // Inline toggle
-        const header = botMsg.querySelector('.msg-header');
-        header.onclick = function() {
-          const think = this.nextElementSibling;
-          const arrow = this.querySelector('.arrow');
-          const text = this.querySelector('.header-text');
-          if (think.style.maxHeight === '0px' || !think.style.maxHeight) {
-            think.style.maxHeight = think.scrollHeight + 'px';
-            arrow.textContent = '▼';
-            arrow.style.transform = 'rotate(180deg)';
-            text.textContent = 'Neural Thought Matrix [Expanded]';
-          } else {
-            think.style.maxHeight = '0px';
-            arrow.textContent = '▶';
-            arrow.style.transform = 'rotate(0deg)';
-            text.textContent = 'Neural Thought Matrix [Collapsed]';
-          }
-          scrollToBottom();
-        };
-      }
-    });
-  }
-
-  // Global toggle (as before) – DEPRECATED: Inline now, but keep for legacy
-  window.toggleCollapse = function(header) {
-    const think = header.nextElementSibling;
-    const arrow = header.querySelector('.arrow');
-    const headerText = header.querySelector('.header-text');
-    if (think.style.display === 'none') {
-      think.style.display = 'block';
-      arrow.textContent = '▼';
-      arrow.style.transform = 'rotate(180deg)';
-      headerText.textContent = 'Neural Thought Matrix [Expanded]';
-    } else {
-      think.style.display = 'none';
-      arrow.textContent = '▶';
-      arrow.style.transform = 'rotate(0deg)';
-      headerText.textContent = 'Neural Thought Matrix [Collapsed]';
-    }
-    scrollToBottom();
-  };
-
-  window.switchToChat = switchToChat;
-  window.deleteChat = deleteChat;
-
-  // Typewriter (as before)
-  function typeWriter(element, text, index, currentText, onComplete) {
-    if (index < text.length) {
-      currentText += text.charAt(index);
-      if (typeof marked !== 'undefined') {
-        element.innerHTML = marked.parse(currentText);
-      } else {
-        element.textContent = currentText;
-      }
-      setTimeout(() => typeWriter(element, text, index + 1, currentText, onComplete), 2);
-    } else {
-      if (onComplete) onComplete();
-    }
-  }
-
-  // Create message (as before) - For history load, assume content is main (stripped) – FIXED: Handle obj for thinking
-  function createMessage(sender, textOrObj) {
-    const div = document.createElement('div');
-    div.className = `message ${sender}`;
-    if (sender === 'user') {
-      const content = document.createElement('div');
-      content.className = 'content';
-      content.textContent = typeof textOrObj === 'string' ? textOrObj : textOrObj.content;
-      div.appendChild(content);
-    } else {
-      let main = textOrObj;
-      let thinking = null;
-      if (typeof textOrObj === 'object' && textOrObj.thinking) {
-        main = textOrObj.content;
-        thinking = textOrObj.thinking;
-      } else if (typeof textOrObj === 'string') {
-        const thinkMatch = textOrObj.match(/<think>([\s\S]*?)<\/think>/i);
-        if (thinkMatch) {
-          thinking = thinkMatch[1].trim();
-          main = textOrObj.replace(/<think>[\s\S]*?<\/think>/i, '').trim();
-        }
-      }
-      renderBotResponse(div, { main, thinking });
-      const thinkDiv = div.querySelector('.msg-think');
-      if (thinkDiv) {
-        thinkDiv.style.maxHeight = '0px';  // Collapsed on load
-        const header = div.querySelector('.msg-header');
-        const arrow = header.querySelector('.arrow');
-        arrow.textContent = '▶';
-        const headerText = header.querySelector('.header-text');
-        headerText.textContent = 'Neural Thought Matrix [Collapsed]';
-        // Wire inline toggle
-        header.onclick = function() {
-          const think = this.nextElementSibling;
-          const arrow = this.querySelector('.arrow');
-          const text = this.querySelector('.header-text');
-          if (think.style.maxHeight === '0px' || !think.style.maxHeight) {
-            think.style.maxHeight = think.scrollHeight + 'px';
-            arrow.textContent = '▼';
-            arrow.style.transform = 'rotate(180deg)';
-            text.textContent = 'Neural Thought Matrix [Expanded]';
-          } else {
-            think.style.maxHeight = '0px';
-            arrow.textContent = '▶';
-            arrow.style.transform = 'rotate(0deg)';
-            text.textContent = 'Neural Thought Matrix [Collapsed]';
-          }
-          scrollToBottom();
-        };
-      }
-    }
-    return div;
-  }
-
-  // Scroll to bottom
+  // Scroll helper
   function scrollToBottom() {
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
+
+  // Global onclicks for inline (legacy)
+  window.switchToChat = switchToChat;
+  window.deleteChat = deleteChat;
 
   // Save on unload
   window.addEventListener('beforeunload', saveChats);
 
   // Init
+  loadTheme();
   initChats();
   console.log('🧠 SteveAI: Interface online – Ready for transmission!');
 });
 
-// Toast keyframe
+// Toast keyframe (CSS inject)
 const style = document.createElement('style');
 style.textContent = `@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } } .model-toast { animation: slideIn 0.5s ease-out; }`;
 document.head.appendChild(style);
