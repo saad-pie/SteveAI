@@ -5,7 +5,7 @@
 // New: Individual Chats – Sidebar lists chats (by title/preview), + New creates fresh (timestamp ID), select loads without re-render (append-only). No global history reload. Model sidebar separate toggle.
 // Grok-Style Update: Unified sidebar toggle via hamburger, AI-generated chat titles on first msg (via SteveAI-default), auto-gen on load, models integrated in sidebar.
 // FIX: Import config for model refs; pass model to getBotAnswer for title gen; update mock; better statusBar mode display.
-// ADDITIONAL FIXES (Halloween 2025): Commands instant (no orb hang via handled flag), model default clamp/switch local (no AI ping), tab isolation (sessionStorage msgs), thinking persistence/collapse consistent, orb clear guarantee, sidebar init/highlight, inline toggles.
+// ADDITIONAL FIXES (Halloween 2025): Commands instant (no orb hang via local handler), model default clamp/switch local (no AI ping), tab isolation (sessionStorage msgs), thinking persistence/collapse consistent, orb clear guarantee, sidebar init/highlight, inline toggles, single getBotAnswer call (no dupe), consistent classes (content-main/content-think).
 
 import config from './config.js';  // NEW: Import for model mappings
 
@@ -112,6 +112,66 @@ document.addEventListener('DOMContentLoaded', () => {
   const initialMode = Object.keys(config.models).find(key => config.models[key] === currentModel) || 'default';
   const initialItem = modelDropdown.querySelector(`[data-mode="${initialMode}"]`);
   if (initialItem) initialItem.style.background = 'rgba(0,247,255,0.2)';
+
+  // Local command handler (for instant, no getBotAnswer call)
+  function handleCommand(prompt) {
+    if (!prompt.startsWith('/')) return { handled: false };
+    const [, cmd, ...args] = prompt.split(' ');
+    let main = '';
+    switch (cmd.toLowerCase()) {
+      case 'clear':
+        clearSession();  // From functions
+        main = 'Chat wiped—fresh timeline activated! 🚀';
+        break;
+      case 'help':
+        main = `SteveAI Commands:\n/clear - Reset chat\n/theme dark|light - Toggle mode\n/model default|general|fast|reasoning - Switch AI mode\n/export - Save as JSON\n/help - This list\n/image <prompt> - Gen image (coming soon)\n\nAsk away!`;
+        break;
+      case 'theme':
+        const theme = args[0] || config.defaultTheme;
+        document.body.classList.toggle('dark', theme === 'dark');
+        localStorage.setItem('steveai_theme', theme);
+        main = `Theme switched to ${theme}!`;
+        break;
+      case 'model':
+        const mode = args[0]?.toLowerCase() || 'default';
+        if (!['default', 'general', 'fast', 'reasoning'].includes(mode)) {
+          main = 'Available modes: default (GPT-5-nano), general (Grok-4), fast (Gemini Flash), reasoning (DeepSeek V3). Usage: /model <mode>';
+        } else {
+          currentModel = config.models[mode];
+          localStorage.setItem('steveai_current_model', currentModel);
+          statusBar.textContent = `Mode: ${mode.toUpperCase()}`;
+          // Toast
+          const toast = document.createElement('div');
+          toast.className = 'model-toast';
+          toast.textContent = `Switched to ${mode.toUpperCase()}`;
+          toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,247,255,0.9); color: #000; padding: 1rem; border-radius: 8px; box-shadow: 0 0 20px var(--neon-cyan); z-index: 30; animation: slideIn 0.5s;';
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 2000);
+          main = `Mode switched to **${mode.toUpperCase()}** (${currentModel}) – Neural pathways recalibrated! 🚀`;
+        }
+        break;
+      case 'export':
+        const chatsData = JSON.parse(localStorage.getItem('steveai_chats') || '[]');
+        const currentChatIdData = localStorage.getItem('steveai_current_chat') || 'none';
+        const exportData = JSON.stringify({ currentChat: currentChatIdData, chats: chatsData }, null, 2);
+        const blob = new Blob([exportData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'steveai-chats.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        main = "Chats exported—your convos's eternal!";
+        break;
+      case 'image':
+        const imgPrompt = prompt.slice(7).trim();
+        main = imgPrompt ? `Image gen queued for "${imgPrompt}" (feature incoming—stay tuned!)` : 'Usage: /image <your prompt here>';
+        break;
+      default:
+        main = 'Unknown command—type /help for options. (Pro tip: I\'m forgiving.)';
+    }
+    return { handled: true, response: { main, thinking: null } };
+  }
 
   // NEW: Generate AI Title for Chat (uses SteveAI-default via param, short prompt)
   async function generateChatTitle(firstPrompt, chatId) {
@@ -299,57 +359,59 @@ document.addEventListener('DOMContentLoaded', () => {
     let responseData = { main: 'Transmission error—retry vector?', thinking: null, handled: false };
 
     // FIX: Early command check (no orb for handled)
-    responseData = await getBotAnswer(prompt, currentChat.messages, currentModel);
+    const commandResult = handleCommand(prompt);
+    if (commandResult.handled) {
+      responseData = commandResult.response;
+    } else {
+      // Else: Normal AI (orb + stream/type)
+      // Generating orb
+      const botMsg = document.createElement('div');
+      botMsg.className = 'message bot';
+      botMsg.innerHTML = `<div class="generating"><div class="orb"></div><span>Syncing neural net... (Quantum processing)</span></div>`;
+      messagesEl.appendChild(botMsg);
+      scrollToBottom();
+
+      try {
+        if (typeof getBotAnswer === 'function') {
+          responseData = await getBotAnswer(prompt, currentChat.messages, currentModel);  // Single call
+        } else {
+          responseData.main = `Mock: Hi back! "${prompt}" – Interface glitching?`;
+        }
+      } catch (error) {
+        console.error('🚨 SteveAI: getBotAnswer Error:', error);
+        responseData.main = 'Signal lost. Rebooting interface...';
+      } finally {
+        // FIX: Guarantee orb clear
+        const genDiv = botMsg.querySelector('.generating');
+        if (genDiv) botMsg.innerHTML = '';
+        renderBotResponse(botMsg, responseData);
+      }
+    }
+
+    // Unified save/render (cmd or normal)
+    currentChat.messages.push({ role: 'user', content: prompt });
     if (responseData.handled) {
-      // Instant system render (no orb/typewriter)
+      // Cmd: Plain content
+      currentChat.messages.push({ role: 'assistant', content: responseData.main });
       const sysMsg = createMessage('bot', responseData.main);
       sysMsg.querySelector('.content-main, .content').classList.add('system');
       messagesEl.appendChild(sysMsg);
-      scrollToBottom();
-      // Save
-      currentChat.messages.push({ role: 'user', content: prompt });
-      currentChat.messages.push({ role: 'assistant', content: responseData.main });
-      if (isFirstMessage) await generateChatTitle(prompt, currentChatId);
-      saveChats();
-      sendBtn.disabled = false;
-      return;
+    } else {
+      // Normal: Full w/ thinking
+      currentChat.messages.push({ role: 'assistant', content: responseData.main, thinking: responseData.thinking });
     }
-
-    // Else: Normal AI (orb + stream/type)
-    // Generating orb
-    const botMsg = document.createElement('div');
-    botMsg.className = 'message bot';
-    botMsg.innerHTML = `<div class="generating"><div class="orb"></div><span>Syncing neural net... (Quantum processing)</span></div>`;
-    messagesEl.appendChild(botMsg);
     scrollToBottom();
 
-    try {
-      if (typeof getBotAnswer === 'function') {
-        responseData = await getBotAnswer(prompt, currentChat.messages, currentModel);  // Pass model
-      } else {
-        responseData.main = `Mock: Hi back! "${prompt}" – Interface glitching?`;
-      }
-    } catch (error) {
-      console.error('🚨 SteveAI: getBotAnswer Error:', error);
-      responseData.main = 'Signal lost. Rebooting interface...';
-    } finally {
-      // FIX: Guarantee orb clear
-      const genDiv = botMsg.querySelector('.generating');
-      if (genDiv) botMsg.innerHTML = '';
-      renderBotResponse(botMsg, responseData);
-      // Add to chat messages (full w/ thinking)
-      currentChat.messages.push({ role: 'user', content: prompt });
-      currentChat.messages.push({ role: 'assistant', content: responseData.main, thinking: responseData.thinking });
-      // If first, gen title
-      if (isFirstMessage) {
-        await generateChatTitle(prompt, currentChatId);
-      } else {
-        currentChat.preview = prompt.substring(0, 50) + '...';
-        saveChats();
-        loadChatList();  // Refresh list preview
-      }
-      sendBtn.disabled = false;
+    // If first, gen title
+    if (isFirstMessage) {
+      await generateChatTitle(prompt, currentChatId);
+    } else {
+      currentChat.preview = prompt.substring(0, 50) + '...';
     }
+    saveChats();
+    loadChatList();  // Refresh list preview
+
+    sendBtn.disabled = false;
   });
 
   // Render bot response (as before) – FIXED: Inline toggle, smooth collapse
