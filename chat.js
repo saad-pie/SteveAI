@@ -1,25 +1,41 @@
 // chat.js: Futuristic Chat UI Logic for SteveAI 2.0
 // Integrates with functions/chat.js for backend responses
 // Features: Markdown rendering via Marked.js, typewriter animation (random fast speed), orb loading indicator
-// Fix: Wrapped all in DOMContentLoaded to ensure DOM ready before attaching listeners/selectors
-
-import { getBotAnswer } from './functions/chat.js';  // Adjust path if needed (e.g., '../functions/chat.js')
+// Debug Fixes: Removed initial disabled from HTML; JS sets it. Added console.logs for tracing. Fallback non-module for marked if needed.
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('🧠 SteveAI: DOM Loaded – Initializing neural interface...');
+
   const messagesEl = document.getElementById('messages');
   const userInput = document.getElementById('user-input');
   const sendBtn = document.getElementById('send-btn');
 
+  if (!messagesEl || !userInput || !sendBtn) {
+    console.error('🚨 SteveAI: Critical – DOM elements missing! Check IDs in chat.html.');
+    return;  // Bail if selectors fail
+  }
+
+  console.log('🧠 SteveAI: Elements found – Attaching listeners.');
+
+  // Set initial disabled state via JS (safer than HTML attr)
+  sendBtn.disabled = true;
+  console.log('🧠 SteveAI: Send button disabled (initial).');
+
   // Enable send button when typing
   userInput.addEventListener('input', () => {
-    sendBtn.disabled = userInput.value.trim() === '';
+    const hasValue = userInput.value.trim() !== '';
+    sendBtn.disabled = !hasValue;
+    console.log(`🧠 SteveAI: Input changed – Button ${hasValue ? 'ENABLED' : 'DISABLED'}.`);
   });
 
   // Send on Enter (no Shift for multiline if needed)
   userInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
+      console.log('🧠 SteveAI: Enter pressed – Triggering send.');
       e.preventDefault();
-      sendBtn.click();
+      if (!sendBtn.disabled) {
+        sendBtn.click();
+      }
     }
   });
 
@@ -27,7 +43,12 @@ document.addEventListener('DOMContentLoaded', () => {
   sendBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     const prompt = userInput.value.trim();
-    if (!prompt) return;
+    if (!prompt) {
+      console.log('🧠 SteveAI: Send clicked but empty prompt – Ignoring.');
+      return;
+    }
+
+    console.log(`🧠 SteveAI: Send activated – Prompt: "${prompt}"`);
 
     // Clear input & disable
     userInput.value = '';
@@ -52,8 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollToBottom();
 
     try {
+      console.log('🧠 SteveAI: Fetching response from getBotAnswer...');
       // Get response from backend (handles commands & AI)
       const reply = await getBotAnswer(prompt);
+      console.log('🧠 SteveAI: Response received:', reply ? 'Success' : 'Empty');
 
       // Replace generating with content wrapper
       botMsg.innerHTML = '<div class="content"></div>';
@@ -66,12 +89,17 @@ document.addEventListener('DOMContentLoaded', () => {
         content.textContent = 'Transmission error—retry vector?';
       }
     } catch (error) {
-      console.error('Chat UI Error:', error);
+      console.error('🚨 SteveAI: Chat UI Error:', error);
       const content = botMsg.querySelector('.content') || botMsg;
-      content.innerHTML = '<div class="content">Signal lost. Rebooting interface...</div>';
+      if (content.tagName === 'DIV') {
+        content.innerHTML = '<div class="content">Signal lost. Rebooting interface...</div>';
+      } else {
+        content.textContent = 'Signal lost. Rebooting interface...';
+      }
     } finally {
       // Re-enable send
       sendBtn.disabled = false;
+      console.log('🧠 SteveAI: Send button re-enabled.');
     }
   });
 
@@ -83,7 +111,13 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => typeWriter(element, text, index + 1), delay);
     } else {
       // Animation complete: Parse & render markdown to HTML
-      element.innerHTML = marked.parse(text);
+      if (typeof marked !== 'undefined') {
+        element.innerHTML = marked.parse(text);
+      } else {
+        console.warn('🚨 SteveAI: Marked.js not loaded – Falling back to plain text.');
+        element.textContent = text;
+      }
+      console.log('🧠 SteveAI: Typewriter complete – Markdown rendered.');
     }
   }
 
@@ -96,7 +130,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sender === 'user') {
       content.textContent = text;  // Plain for user
     } else {
-      content.innerHTML = marked.parse(text);  // Markdown for bot (if pre-rendered)
+      // For history load: Render markdown if bot
+      if (typeof marked !== 'undefined' && sender === 'bot') {
+        content.innerHTML = marked.parse(text);
+      } else {
+        content.textContent = text;
+      }
     }
     div.appendChild(content);
     return div;
@@ -108,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load chat history on init (render past messages with markdown)
+  console.log('🧠 SteveAI: Loading chat history...');
   const hist = JSON.parse(localStorage.getItem('steveai_messages') || '[]');
   for (let msg of hist.slice(1)) {  // Skip system prompt
     const msgEl = createMessage(msg.role, msg.content);
@@ -121,4 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
     messagesEl.appendChild(welcome);
     scrollToBottom();
   }
+  console.log('🧠 SteveAI: Interface online – Ready for transmission!');
 });
+
+// Fallback import for module (if ES module fails, log)
+if (typeof getBotAnswer === 'undefined') {
+  console.error('🚨 SteveAI: Import failed – Check path to ./functions/chat.js and config.js. Ensure no syntax errors.');
+}
