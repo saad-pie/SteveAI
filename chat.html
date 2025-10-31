@@ -23,11 +23,15 @@
     <div class="input-area">
       <div class="input-wrapper">
         <input type="text" id="user-input" placeholder="Sync your thoughts..." autocomplete="off" />
-        <button class="send-btn" id="send-btn"><span></span></button>
+        <button class="send-btn" id="send-btn" disabled><span></span></button>
       </div>
     </div>
   </div>
 
+  <!-- Markdown Parser -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@latest/marked.min.js"></script>
+  
+  <!-- Particles -->
   <script>
     // Optional: Add particles
     const particlesContainer = document.getElementById('particles');
@@ -40,5 +44,8 @@
       particlesContainer.appendChild(p);
     }
   </script>
+
+  <!-- Main Chat Logic -->
+  <script type="module" src="chat.js"></script>
 </body>
 </html>

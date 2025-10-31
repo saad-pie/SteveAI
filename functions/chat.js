@@ -12,15 +12,25 @@ if (messages.length === 0) {
 
 // Export main function: Get bot answer for a user prompt (handles commands, API call)
 export async function getBotAnswer(userPrompt) {
-  // Parse commands first (e.g., /clear, /help)
-  const commandHandled = await handleCommand(userPrompt);
-  if (commandHandled) {
-    return null;  // Command processed—no AI call needed
-  }
-
-  // Add user message to history
+  // Add user message to history first
   messages.push({ role: 'user', content: userPrompt });
   localStorage.setItem('steveai_messages', JSON.stringify(messages));
+
+  // Parse commands (e.g., /clear, /help)
+  const commandResponse = await handleCommand(userPrompt);
+  if (commandResponse !== false) {
+    // Handle special case for /clear (re-add user after reset)
+    if (userPrompt.toLowerCase().startsWith('/clear')) {
+      messages = [
+        { role: 'system', content: config.systemPrompt },
+        { role: 'user', content: userPrompt }
+      ];
+    }
+    // Add command response to history
+    messages.push({ role: 'assistant', content: commandResponse });
+    localStorage.setItem('steveai_messages', JSON.stringify(messages));
+    return commandResponse;
+  }
 
   if (config.debug) {
     console.log('SteveAI Chat Payload:', {
@@ -63,9 +73,12 @@ export async function getBotAnswer(userPrompt) {
   } catch (error) {
     console.error('SteveAI Bot Error:', error);
     // Fallback: Witty mock based on curl example
-    const fallback = config.debug 
+    const fallback = config.debug
       ? `Debug: ${error.message}\n\n(Mocking: API gateways? They're the unsung heroes routing your requests securely—like a futuristic portal gun for data!)`
       : 'Whoa, signal jam—try rephrasing? (I\'m SteveAI, always plotting my comeback.)';
+    // Add fallback to history
+    messages.push({ role: 'assistant', content: fallback });
+    localStorage.setItem('steveai_messages', JSON.stringify(messages));
     return fallback;
   }
 }
