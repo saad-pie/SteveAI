@@ -1,7 +1,9 @@
 // chat.js: Futuristic Chat UI Logic for SteveAI 2.0
-// Integrates with functions/chat.js for backend responses
+// Integrates with functions/chat.js for backend responses (with fallback if import fails)
 // Features: Markdown rendering via Marked.js, typewriter animation (random fast speed), orb loading indicator
-// Debug Fixes: Removed initial disabled from HTML; JS sets it. Added console.logs for tracing. Fallback non-module for marked if needed.
+// Debug Fixes: Safe async call to getBotAnswer (skips if undefined, uses mock). More logs. Initial button enabled.
+
+let getBotAnswer;  // Declare globally for fallback
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🧠 SteveAI: DOM Loaded – Initializing neural interface...');
@@ -17,11 +19,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.log('🧠 SteveAI: Elements found – Attaching listeners.');
 
-  // Set initial disabled state via JS (safer than HTML attr)
-  sendBtn.disabled = true;
-  console.log('🧠 SteveAI: Send button disabled (initial).');
+  // Attempt import (async for modules)
+  import('./functions/chat.js').then(module => {
+    getBotAnswer = module.getBotAnswer;
+    console.log('🧠 SteveAI: Import success – getBotAnswer loaded.');
+  }).catch(error => {
+    console.error('🚨 SteveAI: Import failed:', error);
+    console.error('🚨 SteveAI: Check: 1) functions/chat.js exists? 2) config.js in root? 3) Syntax errors? 4) Netlify MIME for .js (add _headers: /*\nContent-Type: application/javascript\n)');
+    // Mock fallback for testing
+    getBotAnswer = async (prompt) => {
+      console.log('🧠 SteveAI: Using MOCK response (import failed).');
+      return `Echo: "${prompt}" – Neural link offline. Fix import for real AI! (Debug: Check console for details.)`;
+    };
+  });
 
-  // Enable send button when typing
+  // Set initial state: Button ENABLED (user can type/send immediately; disable on empty via input)
+  sendBtn.disabled = false;  // Start enabled – input listener handles
+  console.log('🧠 SteveAI: Send button enabled (initial).');
+
+  // Enable/disable send button when typing (redundant if always enabled, but safe)
   userInput.addEventListener('input', () => {
     const hasValue = userInput.value.trim() !== '';
     sendBtn.disabled = !hasValue;
@@ -35,6 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       if (!sendBtn.disabled) {
         sendBtn.click();
+      } else {
+        console.log('🧠 SteveAI: Enter ignored – Input empty.');
       }
     }
   });
@@ -50,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     console.log(`🧠 SteveAI: Send activated – Prompt: "${prompt}"`);
 
-    // Clear input & disable
+    // Clear input & disable during process
     userInput.value = '';
     sendBtn.disabled = true;
     userInput.focus();  // Keep focus for next input
@@ -72,31 +90,28 @@ document.addEventListener('DOMContentLoaded', () => {
     messagesEl.appendChild(botMsg);
     scrollToBottom();
 
-    try {
-      console.log('🧠 SteveAI: Fetching response from getBotAnswer...');
-      // Get response from backend (handles commands & AI)
-      const reply = await getBotAnswer(prompt);
-      console.log('🧠 SteveAI: Response received:', reply ? 'Success' : 'Empty');
+    let reply = 'Transmission error—retry vector?';  // Default error
 
+    try {
+      if (typeof getBotAnswer === 'function') {
+        console.log('🧠 SteveAI: Calling real getBotAnswer...');
+        reply = await getBotAnswer(prompt);
+        console.log('🧠 SteveAI: Real response received:', reply ? 'Success' : 'Empty');
+      } else {
+        console.log('🧠 SteveAI: Skipping getBotAnswer (undefined) – Using mock.');
+        reply = `Mock: Hi back! "${prompt}" – Interface glitching? Check import logs above.`;
+      }
+    } catch (error) {
+      console.error('🚨 SteveAI: getBotAnswer Error:', error);
+      reply = 'Signal lost. Rebooting interface... (Error details in console.)';
+    } finally {
       // Replace generating with content wrapper
       botMsg.innerHTML = '<div class="content"></div>';
       const content = botMsg.querySelector('.content');
 
-      if (reply) {
-        // Typewriter animation: Fast random speed (20-80ms per char)
-        typeWriter(content, reply, 0);
-      } else {
-        content.textContent = 'Transmission error—retry vector?';
-      }
-    } catch (error) {
-      console.error('🚨 SteveAI: Chat UI Error:', error);
-      const content = botMsg.querySelector('.content') || botMsg;
-      if (content.tagName === 'DIV') {
-        content.innerHTML = '<div class="content">Signal lost. Rebooting interface...</div>';
-      } else {
-        content.textContent = 'Signal lost. Rebooting interface...';
-      }
-    } finally {
+      // Typewriter animation: Fast random speed (20-80ms per char)
+      typeWriter(content, reply, 0);
+
       // Re-enable send
       sendBtn.disabled = false;
       console.log('🧠 SteveAI: Send button re-enabled.');
@@ -163,8 +178,3 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   console.log('🧠 SteveAI: Interface online – Ready for transmission!');
 });
-
-// Fallback import for module (if ES module fails, log)
-if (typeof getBotAnswer === 'undefined') {
-  console.error('🚨 SteveAI: Import failed – Check path to ./functions/chat.js and config.js. Ensure no syntax errors.');
-}
