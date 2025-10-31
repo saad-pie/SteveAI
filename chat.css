@@ -1,6 +1,7 @@
 /* chat.css for SteveAI 2.0 – Futuristic AI Chat Interface */
 /* Designed to feel like a neural-interface bot from 2047 */
 /* Updates: Added .content wrapper for typing animation, .generating orb for loading */
+/* New: Collapsible <think> matrix (.msg-header, .arrow, .msg-think) with neon glow toggles; smooth max-height transitions for futuristic slide. */
 
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Roboto+Mono:wght@300;400;500&display=swap');
 
@@ -297,6 +298,74 @@ body {
   50% { transform: scale(1.3); opacity: 1; }
 }
 
+/* Collapsible Message Structures (Futuristic Neural Matrix) */
+.message.bot .msg-header {
+  cursor: pointer;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 0, 255, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all var(--anim-fast);
+  color: var(--neon-magenta);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  text-shadow: 0 0 5px var(--neon-magenta);
+}
+
+.message.bot .msg-header:hover {
+  box-shadow: 0 0 10px var(--neon-magenta);
+  transform: translateX(2px);
+}
+
+.message.bot .arrow {
+  font-size: 0.8rem;
+  color: var(--neon-cyan);
+  transition: transform var(--anim-medium), color var(--anim-fast);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.message.bot .header-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  user-select: none;
+}
+
+.message.bot .msg-think,
+.message.bot .msg-main {
+  overflow: hidden;
+  transition: max-height var(--anim-medium) ease-out, opacity var(--anim-fast);
+  max-height: 0;
+  opacity: 0;
+}
+
+.message.bot .msg-think[style*="block"],
+.message.bot .msg-main[style*="block"] {
+  max-height: 2000px;  /* Adjust for long responses */
+  opacity: 1;
+}
+
+.message.bot .content-think,
+.message.bot .content-main {
+  padding: 0.5rem 0;
+  line-height: 1.5;
+  word-wrap: break-word;
+  font-size: 0.95rem;
+  color: #e0faff;
+  background: rgba(157, 0, 255, 0.05);  /* Subtle think glow */
+  margin: 0.5rem 0;
+  border-radius: 8px;
+  padding: 1rem;
+  border-left: 3px solid var(--neon-purple);
+}
+
+.message.bot .content-think {
+  font-style: italic;
+  box-shadow: inset 0 0 10px rgba(157, 0, 255, 0.1);
+}
+
 /* Input Area */
 .input-area {
   padding: 1rem;
@@ -417,4 +486,6 @@ body {
   .logo { font-size: 2.2rem; }
   .message { max-width: 90%; padding: 0.9rem 1.2rem; }
   .input-wrapper { padding: 0.6rem 1rem; }
+  .msg-header { font-size: 0.8rem; }
+  .arrow { font-size: 0.7rem; }
 }

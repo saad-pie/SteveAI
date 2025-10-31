@@ -1,5 +1,6 @@
 // functions/chat.js: All text chat bot logic—getBotAnswer() is your one-stop API handler.
-// Modular: Use in chat.html, or import elsewhere (e.g., for commands like /image).                         
+// Modular: Use in chat.html, or import elsewhere (e.g., for commands like /image).
+
 import config from '../config.js';  // Adjust path if needed
 
 // Global state: Messages history (session-persisted via localStorage)
@@ -7,6 +8,20 @@ let messages = JSON.parse(localStorage.getItem('steveai_messages') || '[]');
 if (messages.length === 0) {
   messages = [{ role: 'system', content: config.systemPrompt }];
   localStorage.setItem('steveai_messages', JSON.stringify(messages));
+}
+
+// Global state: Current AI model (session-persisted via localStorage)
+let currentModel = localStorage.getItem('steveai_current_model') || config.models.default;
+
+// Function to parse <think> tags (Gemini-specific reasoning artifact)
+function parseThinkTags(text) {
+  const thinkMatch = text.match(/<think>([\s\S]*?)<\/think>/i);
+  if (thinkMatch) {
+    const thinking = thinkMatch[1].trim();
+    const main = text.replace(/<think>[\s\S]*?<\/think>/i, '').trim();
+    return { main, thinking };
+  }
+  return { main: text, thinking: null };
 }
 
 // Export main function: Get bot answer for a user prompt (handles commands, API call)
@@ -25,15 +40,16 @@ export async function getBotAnswer(userPrompt) {
         { role: 'user', content: userPrompt }
       ];
     }
-    // Add command response to history
-    messages.push({ role: 'assistant', content: commandResponse });
+    // Add command response to history (as main only)
+    const { main } = parseThinkTags(commandResponse);  // Though commands have no <think>
+    messages.push({ role: 'assistant', content: main });
     localStorage.setItem('steveai_messages', JSON.stringify(messages));
-    return commandResponse;
+    return { main, thinking: null };
   }
 
   if (config.debug) {
     console.log('SteveAI Chat Payload:', {
-      model: config.defaultModel,
+      model: currentModel,
       messages: messages.slice(-10),  // Limit context
       temperature: config.temperature,
       max_tokens: config.maxTokens
@@ -49,7 +65,7 @@ export async function getBotAnswer(userPrompt) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: config.defaultModel,  // provider-3/gpt-5-nano
+        model: currentModel,
         messages: messages.slice(-10),  // System + recent
         temperature: config.temperature,  // 0.7
         max_tokens: config.maxTokens  // 150
@@ -62,23 +78,26 @@ export async function getBotAnswer(userPrompt) {
     }
 
     const data = await response.json();
-    const reply = data.choices[0]?.message?.content?.trim() || 'No response—glitch in the matrix?';
+    let rawReply = data.choices[0]?.message?.content?.trim() || 'No response—glitch in the matrix?';
 
-    // Add to history
-    messages.push({ role: 'assistant', content: reply });
+    // Parse for <think> tags
+    const { main, thinking } = parseThinkTags(rawReply);
+
+    // Add to history (main only – thinking is UI ephemeral)
+    messages.push({ role: 'assistant', content: main });
     localStorage.setItem('steveai_messages', JSON.stringify(messages));
 
-    return reply;
+    return { main, thinking };
   } catch (error) {
     console.error('SteveAI Bot Error:', error);
     // Fallback: Witty mock based on curl example
-    const fallback = config.debug
+    const fallbackMain = config.debug
       ? `Debug: ${error.message}\n\n(Mocking: API gateways? They're the unsung heroes routing your requests securely—like a futuristic portal gun for data!)`
       : 'Whoa, signal jam—try rephrasing? (I\'m SteveAI, always plotting my comeback.)';
-    // Add fallback to history
-    messages.push({ role: 'assistant', content: fallback });
+    // Add fallback to history (main only)
+    messages.push({ role: 'assistant', content: fallbackMain });
     localStorage.setItem('steveai_messages', JSON.stringify(messages));
-    return fallback;
+    return { main: fallbackMain, thinking: null };
   }
 }
 
@@ -94,13 +113,22 @@ async function handleCommand(text) {
       return 'Chat wiped—fresh timeline activated! 🚀';
 
     case '/help':
-      return `SteveAI Commands:\n/clear - Reset chat\n/theme dark|light - Toggle mode\n/export - Save as JSON\n/help - This list\n/image <prompt> - Gen image (coming soon)\n\nAsk away!`;
+      return `SteveAI Commands:\n/clear - Reset chat\n/theme dark|light - Toggle mode\n/model default|general|fast|reasoning - Switch AI mode\n/export - Save as JSON\n/help - This list\n/image <prompt> - Gen image (coming soon)\n\nAsk away!`;
 
     case '/theme':
       const theme = text.split(' ')[1] || config.defaultTheme;
       document.body.classList.toggle('dark', theme === 'dark');
       localStorage.setItem('steveai_theme', theme);
       return `Theme switched to ${theme}!`;
+
+    case '/model':
+      const mode = text.split(' ')[1]?.toLowerCase();
+      if (!mode || !['default', 'general', 'fast', 'reasoning'].includes(mode)) {
+        return 'Available modes: default (GPT-5-nano), general (Grok-4), fast (Gemini Flash), reasoning (DeepSeek V3). Usage: /model <mode>';
+      }
+      currentModel = config.models[mode];
+      localStorage.setItem('steveai_current_model', currentModel);
+      return `Mode switched to **${mode.toUpperCase()}** (${currentModel}) – Neural pathways recalibrated! 🚀`;
 
     case '/export':
       const exportData = JSON.stringify(messages, null, 2);
@@ -136,7 +164,9 @@ export function loadTheme() {
 export function clearSession() {
   localStorage.removeItem('steveai_messages');
   localStorage.removeItem('steveai_theme');
+  localStorage.removeItem('steveai_current_model');
   messages = [{ role: 'system', content: config.systemPrompt }];
+  currentModel = config.models.default;
 }
 
 // For testing in Node/Termux: if (typeof module !== 'undefined') { ... }
