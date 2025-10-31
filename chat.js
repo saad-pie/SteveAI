@@ -1,7 +1,6 @@
 // chat.js: Futuristic Chat UI Logic for SteveAI 2.0
 // Integrates with functions/chat.js for backend responses (with fallback if import fails)
-// Features: Markdown rendering via Marked.js, typewriter animation (random fast speed), orb loading indicator
-// Debug Fixes: Safe async call to getBotAnswer (skips if undefined, uses mock). More logs. Initial button enabled.
+// Features: Markdown rendering via Marked.js, typewriter animation (ultra-fast 2ms fixed, LIVE formatting on every char for dynamic bold/italics/etc. as it types)
 
 let getBotAnswer;  // Declare globally for fallback
 
@@ -109,8 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
       botMsg.innerHTML = '<div class="content"></div>';
       const content = botMsg.querySelector('.content');
 
-      // Typewriter animation: Fast random speed (20-80ms per char)
-      typeWriter(content, reply, 0);
+      // Typewriter animation: Ultra-fast 2ms fixed, LIVE markdown formatting on every char
+      typeWriter(content, reply, 0, '');
 
       // Re-enable send
       sendBtn.disabled = false;
@@ -118,21 +117,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Typewriter function: Types markdown text, then renders as HTML
-  function typeWriter(element, text, index) {
+  // Typewriter function: Types markdown text, parses/renders HTML LIVE on every char for dynamic formatting
+  function typeWriter(element, text, index, currentText) {
     if (index < text.length) {
-      element.textContent += text.charAt(index);
-      const delay = Math.random() * 60 + 20;  // Random fast: 20-80ms
-      setTimeout(() => typeWriter(element, text, index + 1), delay);
-    } else {
-      // Animation complete: Parse & render markdown to HTML
+      currentText += text.charAt(index);
+      // Live parse & render: Updates innerHTML with formatted markdown instantly
       if (typeof marked !== 'undefined') {
-        element.innerHTML = marked.parse(text);
+        element.innerHTML = marked.parse(currentText);
       } else {
-        console.warn('🚨 SteveAI: Marked.js not loaded – Falling back to plain text.');
-        element.textContent = text;
+        element.textContent = currentText;  // Fallback if no Marked
       }
-      console.log('🧠 SteveAI: Typewriter complete – Markdown rendered.');
+      const delay = 2;  // Fixed 2ms – blazing fast
+      setTimeout(() => typeWriter(element, text, index + 1, currentText), delay);
+    } else {
+      console.log('🧠 SteveAI: Typewriter complete – Full markdown rendered.');
     }
   }
 
