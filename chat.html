@@ -1,44 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SteveAI Chat</title>
-    <link rel="stylesheet" href="../style.css">  <!-- Adjust paths as needed -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SteveAI 2.0</title>
+  <link rel="stylesheet" href="chat.css" />
 </head>
 <body>
-    <nav><!-- Your nav here --></nav>
-    <main class="chat-container">
-        <div id="messages"></div>
-        <form id="chat-form">
-            <textarea id="prompt" placeholder="Chat with SteveAI... (Try /help)"></textarea>
-            <button type="submit">Send</button>
-        </form>
-    </main>
-    <script type="module">
-        import { getBotAnswer, loadTheme } from './functions/chat.js';  // Path from html
+  <div class="bg-grid"></div>
+  <div class="particles" id="particles"></div>
 
-        loadTheme();  // Init theme
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="logo">STEVEAI 2.0</div>
+      <div class="status-bar"></div>
+    </div>
 
-        document.getElementById('chat-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const prompt = document.getElementById('prompt').value.trim();
-            if (!prompt) return;
+    <div class="messages" id="messages">
+      <!-- Messages append here -->
+    </div>
 
-            addMessage('user', prompt);
-            document.getElementById('prompt').value = '';
+    <div class="input-area">
+      <div class="input-wrapper">
+        <input type="text" id="user-input" placeholder="Sync your thoughts..." autocomplete="off" />
+        <button class="send-btn" id="send-btn"><span></span></button>
+      </div>
+    </div>
+  </div>
 
-            const reply = await getBotAnswer(prompt);
-            if (reply) addMessage('ai', reply);
-        });
-
-        function addMessage(sender, text) {
-            const div = document.createElement('div');
-            div.className = `message ${sender}`;
-            div.innerHTML = `<strong>${sender.toUpperCase()}:</strong> ${text.replace(/\n/g, '<br>')}`;
-            document.getElementById('messages').appendChild(div);
-            document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-        }
-    </script>
+  <script>
+    // Optional: Add particles
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 60; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.animationDelay = Math.random() * 15 + 's';
+      p.style.animationDuration = (Math.random() * 10 + 10) + 's';
+      particlesContainer.appendChild(p);
+    }
+  </script>
 </body>
 </html>
