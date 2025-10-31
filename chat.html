@@ -7,9 +7,20 @@
   <link rel="stylesheet" href="chat.css" />
 </head>
 <body>
-  <!-- Sidebar for Model Selection -->
-  <div class="sidebar" id="sidebar">
-    <button class="sidebar-toggle" id="sidebar-toggle">
+  <!-- Chat List Sidebar -->
+  <div class="chat-sidebar" id="chat-sidebar">
+    <div class="sidebar-header">
+      <h3 class="sidebar-title">Neural Chats</h3>
+      <button class="new-chat-btn" id="new-chat-btn">+ New</button>
+    </div>
+    <ul class="chat-list" id="chat-list">
+      <!-- Dynamically populated -->
+    </ul>
+  </div>
+
+  <!-- Model Selection Sidebar -->
+  <div class="model-sidebar" id="model-sidebar">
+    <button class="sidebar-toggle" id="model-toggle">
       <span class="icon">⚙️</span>
       <span class="label">Neural Modes</span>
     </button>
@@ -43,7 +54,7 @@
   <div class="chat-container">
     <div class="chat-header">
       <div class="logo">STEVEAI 2.0</div>
-      <div class="status-bar"></div>
+      <div class="status-bar" id="status-bar"></div>
     </div>
 
     <div class="messages" id="messages">

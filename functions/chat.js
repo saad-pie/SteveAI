@@ -1,14 +1,8 @@
 // functions/chat.js: All text chat bot logic—getBotAnswer() is your one-stop API handler.
 // Modular: Use in chat.html, or import elsewhere (e.g., for commands like /image).
+// Updates for Individual Chats: Now accepts `messages` array as param (non-global). Commands/fallbacks return {main, thinking: null}. System prompt injected if missing.
 
 import config from '../config.js';  // Adjust path if needed
-
-// Global state: Messages history (session-persisted via localStorage)
-let messages = JSON.parse(localStorage.getItem('steveai_messages') || '[]');
-if (messages.length === 0) {
-  messages = [{ role: 'system', content: config.systemPrompt }];
-  localStorage.setItem('steveai_messages', JSON.stringify(messages));
-}
 
 // Global state: Current AI model (session-persisted via localStorage)
 let currentModel = localStorage.getItem('steveai_current_model') || config.models.default;
@@ -24,33 +18,31 @@ function parseThinkTags(text) {
   return { main: text, thinking: null };
 }
 
-// Export main function: Get bot answer for a user prompt (handles commands, API call)
-export async function getBotAnswer(userPrompt) {
-  // Add user message to history first
-  messages.push({ role: 'user', content: userPrompt });
-  localStorage.setItem('steveai_messages', JSON.stringify(messages));
+// Export main function: Get bot answer for a user prompt (handles commands, API call) – Now takes messages array
+export async function getBotAnswer(userPrompt, messages = []) {
+  // Ensure system prompt is first if missing
+  if (messages.length === 0 || messages[0].role !== 'system') {
+    messages = [{ role: 'system', content: config.systemPrompt }, ...messages];
+  }
+
+  // Clone messages to avoid mutating original (per-chat isolation)
+  const chatMessages = [...messages];
+
+  // Add user message to this chat's context
+  chatMessages.push({ role: 'user', content: userPrompt });
 
   // Parse commands (e.g., /clear, /help)
   const commandResponse = await handleCommand(userPrompt);
   if (commandResponse !== false) {
-    // Handle special case for /clear (re-add user after reset)
-    if (userPrompt.toLowerCase().startsWith('/clear')) {
-      messages = [
-        { role: 'system', content: config.systemPrompt },
-        { role: 'user', content: userPrompt }
-      ];
-    }
-    // Add command response to history (as main only)
-    const { main } = parseThinkTags(commandResponse);  // Though commands have no <think>
-    messages.push({ role: 'assistant', content: main });
-    localStorage.setItem('steveai_messages', JSON.stringify(messages));
+    const { main } = parseThinkTags(commandResponse);  // Commands have no <think>
+    chatMessages.push({ role: 'assistant', content: main });
     return { main, thinking: null };
   }
 
   if (config.debug) {
     console.log('SteveAI Chat Payload:', {
       model: currentModel,
-      messages: messages.slice(-10),  // Limit context
+      messages: chatMessages.slice(-10),  // Limit context
       temperature: config.temperature,
       max_tokens: config.maxTokens
     });
@@ -66,7 +58,7 @@ export async function getBotAnswer(userPrompt) {
       },
       body: JSON.stringify({
         model: currentModel,
-        messages: messages.slice(-10),  // System + recent
+        messages: chatMessages.slice(-10),  // System + recent
         temperature: config.temperature,  // 0.7
         max_tokens: config.maxTokens  // 150
       })
@@ -83,9 +75,8 @@ export async function getBotAnswer(userPrompt) {
     // Parse for <think> tags
     const { main, thinking } = parseThinkTags(rawReply);
 
-    // Add to history (main only – thinking is UI ephemeral)
-    messages.push({ role: 'assistant', content: main });
-    localStorage.setItem('steveai_messages', JSON.stringify(messages));
+    // Add to this chat's context (main only – thinking ephemeral)
+    chatMessages.push({ role: 'assistant', content: main });
 
     return { main, thinking };
   } catch (error) {
@@ -94,22 +85,18 @@ export async function getBotAnswer(userPrompt) {
     const fallbackMain = config.debug
       ? `Debug: ${error.message}\n\n(Mocking: API gateways? They're the unsung heroes routing your requests securely—like a futuristic portal gun for data!)`
       : 'Whoa, signal jam—try rephrasing? (I\'m SteveAI, always plotting my comeback.)';
-    // Add fallback to history (main only)
-    messages.push({ role: 'assistant', content: fallbackMain });
-    localStorage.setItem('steveai_messages', JSON.stringify(messages));
+    chatMessages.push({ role: 'assistant', content: fallbackMain });
     return { main: fallbackMain, thinking: null };
   }
 }
 
-// Command handler: Process /commands before AI
+// Command handler: Process /commands before AI (now returns string for main)
 async function handleCommand(text) {
   if (!text.startsWith('/')) return false;
 
   const cmd = text.split(' ')[0].toLowerCase();
   switch (cmd) {
     case '/clear':
-      messages = [{ role: 'system', content: config.systemPrompt }];
-      localStorage.setItem('steveai_messages', JSON.stringify(messages));
       return 'Chat wiped—fresh timeline activated! 🚀';
 
     case '/help':
@@ -131,15 +118,16 @@ async function handleCommand(text) {
       return `Mode switched to **${mode.toUpperCase()}** (${currentModel}) – Neural pathways recalibrated! 🚀`;
 
     case '/export':
-      const exportData = JSON.stringify(messages, null, 2);
+      // For individual chats, export current – but since no global, stub or adapt
+      const exportData = JSON.stringify({ currentChat: currentChatId, chats: chats }, null, 2);  // Pseudo – adapt if needed
       const blob = new Blob([exportData], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'steveai-chat.json';
+      a.download = 'steveai-chats.json';
       a.click();
       URL.revokeObjectURL(url);
-      return "Chat exported—your convo's eternal!";
+      return "Chats exported—your convos's eternal!";
 
     // Stub for /image (calls a future function)
     case '/image':
@@ -162,10 +150,11 @@ export function loadTheme() {
 }
 
 export function clearSession() {
-  localStorage.removeItem('steveai_messages');
+  localStorage.removeItem('steveai_chats');
+  localStorage.removeItem('steveai_current_chat');
   localStorage.removeItem('steveai_theme');
   localStorage.removeItem('steveai_current_model');
-  messages = [{ role: 'system', content: config.systemPrompt }];
+  chats = [];
   currentModel = config.models.default;
 }
 
