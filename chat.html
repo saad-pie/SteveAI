@@ -7,46 +7,43 @@
   <link rel="stylesheet" href="chat.css" />
 </head>
 <body>
-  <!-- Chat List Sidebar -->
-  <div class="chat-sidebar" id="chat-sidebar">
+  <!-- Unified Sliding Sidebar (Grok-style: Chats + Models) -->
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
+      <button class="hamburger" id="hamburger-toggle">
+        <span></span><span></span><span></span> <!-- Three lines SVG-like -->
+      </button>
       <h3 class="sidebar-title">Neural Chats</h3>
       <button class="new-chat-btn" id="new-chat-btn">+ New</button>
     </div>
     <ul class="chat-list" id="chat-list">
-      <!-- Dynamically populated -->
+      <!-- Dynamically populated with AI-generated titles -->
     </ul>
-  </div>
-
-  <!-- Model Selection Sidebar -->
-  <div class="model-sidebar" id="model-sidebar">
-    <button class="sidebar-toggle" id="model-toggle">
-      <span class="icon">⚙️</span>
-      <span class="label">Neural Modes</span>
-    </button>
-    <div class="dropdown" id="model-dropdown">
-      <div class="dropdown-item" data-mode="default">
-        <span class="mode-icon">⚡</span>
-        <span class="mode-name">Default (GPT-5 Nano)</span>
-        <span class="mode-desc">Balanced baseline</span>
-      </div>
-      <div class="dropdown-item" data-mode="general">
-        <span class="mode-icon">🧠</span>
-        <span class="mode-name">General (Grok-4)</span>
-        <span class="mode-desc">Creative horizons</span>
-      </div>
-      <div class="dropdown-item" data-mode="fast">
-        <span class="mode-icon">🚀</span>
-        <span class="mode-name">Fast (Gemini Flash)</span>
-        <span class="mode-desc">Rapid queries</span>
-      </div>
-      <div class="dropdown-item" data-mode="reasoning">
-        <span class="mode-icon">🔍</span>
-        <span class="mode-name">Reasoning (DeepSeek V3)</span>
-        <span class="mode-desc">Logic chains</span>
+    <!-- Models Dropdown Below Chats -->
+    <div class="models-section">
+      <h4 class="section-title">Neural Modes</h4>
+      <div class="model-dropdown" id="model-dropdown">
+        <div class="dropdown-item" data-mode="default">
+          <span class="mode-icon">⚡</span>
+          <span class="mode-name">Default</span>
+        </div>
+        <div class="dropdown-item" data-mode="general">
+          <span class="mode-icon">🧠</span>
+          <span class="mode-name">General</span>
+        </div>
+        <div class="dropdown-item" data-mode="fast">
+          <span class="mode-icon">🚀</span>
+          <span class="mode-name">Fast</span>
+        </div>
+        <div class="dropdown-item" data-mode="reasoning">
+          <span class="mode-icon">🔍</span>
+          <span class="mode-name">Reasoning</span>
+        </div>
       </div>
     </div>
-  </div>
+  </aside>
+  <!-- Overlay for mobile slide -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <div class="bg-grid"></div>
   <div class="particles" id="particles"></div>
@@ -54,7 +51,7 @@
   <div class="chat-container">
     <div class="chat-header">
       <div class="logo">STEVEAI 2.0</div>
-      <div class="status-bar" id="status-bar"></div>
+      <div class="status-bar" id="status-bar">Mode: Default</div>
     </div>
 
     <div class="messages" id="messages">
@@ -71,7 +68,7 @@
 
   <!-- Markdown Parser -->
   <script src="https://cdn.jsdelivr.net/npm/marked@latest/marked.min.js"></script>
-  
+
   <!-- Particles -->
   <script>
     // Optional: Add particles

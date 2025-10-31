@@ -3,10 +3,15 @@
 // Features: Markdown rendering via Marked.js, typewriter animation (ultra-fast 2ms fixed, LIVE formatting on every char for dynamic bold/italics/etc. as it types)
 // Updates: Parses <think> blocks from Gemini/fast mode – Renders as futuristic collapsible "Neural Thought Matrix" (arrow-toggle, glow on hover). Main response always visible. Strips for history.
 // New: Individual Chats – Sidebar lists chats (by title/preview), + New creates fresh (timestamp ID), select loads without re-render (append-only). No global history reload. Model sidebar separate toggle.
+// Grok-Style Update: Unified sidebar toggle via hamburger, AI-generated chat titles on first msg (via SteveAI-default), auto-gen on load, models integrated in sidebar.
+// FIX: Import config for model refs; pass model to getBotAnswer for title gen; update mock; better statusBar mode display.
+
+import config from './config.js';  // NEW: Import for model mappings
 
 let getBotAnswer;  // Declare globally for fallback
+let currentModel = localStorage.getItem('steveai_current_model') || config.models.default;  // Use config default
 let currentChatId = localStorage.getItem('steveai_current_chat') || 'chat-1';  // Default first chat
-let chats = JSON.parse(localStorage.getItem('steveai_chats') || '[]');  // Array of {id, title, preview, messages: []}
+let chats = JSON.parse(localStorage.getItem('steveai_chats') || '[]');  // Array of {id, title, preview, messages: [], titleGenerated: false}
 
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🧠 SteveAI: DOM Loaded – Initializing neural interface...');
@@ -14,15 +19,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const messagesEl = document.getElementById('messages');
   const userInput = document.getElementById('user-input');
   const sendBtn = document.getElementById('send-btn');
-  const chatSidebar = document.getElementById('chat-sidebar');
+  const sidebar = document.getElementById('sidebar');
+  const hamburgerToggle = document.getElementById('hamburger-toggle');
   const newChatBtn = document.getElementById('new-chat-btn');
   const chatList = document.getElementById('chat-list');
-  const modelSidebar = document.getElementById('model-sidebar');
-  const modelToggle = document.getElementById('model-toggle');
   const modelDropdown = document.getElementById('model-dropdown');
   const statusBar = document.getElementById('status-bar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
 
-  if (!messagesEl || !userInput || !sendBtn || !chatSidebar || !newChatBtn) {
+  if (!messagesEl || !userInput || !sendBtn || !sidebar || !newChatBtn) {
     console.error('🚨 SteveAI: Critical – DOM elements missing! Check IDs in chat.html.');
     return;  // Bail if selectors fail
   }
@@ -36,18 +41,62 @@ document.addEventListener('DOMContentLoaded', () => {
   }).catch(error => {
     console.error('🚨 SteveAI: Import failed:', error);
     console.error('🚨 SteveAI: Check: 1) functions/chat.js exists? 2) config.js in root? 3) Syntax errors? 4) Netlify MIME for .js (add _headers: /*\nContent-Type: application/javascript\n)');
-    // Mock fallback for testing
-    getBotAnswer = async (prompt) => {
+    // Mock fallback for testing – UPDATED: Handle model param
+    getBotAnswer = async (prompt, messages = [], model = null) => {
       console.log('🧠 SteveAI: Using MOCK response (import failed).');
       return { main: `Echo: "${prompt}" – Neural link offline. Fix import for real AI! (Debug: Check console for details.)`, thinking: null };
     };
   });
+
+  // Sidebar Toggle (Grok-style hamburger)
+  function toggleSidebar() {
+    sidebar.classList.toggle('open');
+    const isOpen = sidebar.classList.contains('open');
+    if (isOpen) {
+      sidebarOverlay.style.display = 'block'; // Show overlay
+    } else {
+      sidebarOverlay.style.display = 'none';
+    }
+  }
+
+  hamburgerToggle.addEventListener('click', toggleSidebar);
+  sidebarOverlay.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    sidebarOverlay.style.display = 'none';
+  });
+
+  // NEW: Generate AI Title for Chat (uses SteveAI-default via param, short prompt)
+  async function generateChatTitle(firstPrompt, chatId) {
+    const titlePrompt = `Generate a short, catchy, futuristic title (5-8 words max) for this chat based solely on: "${firstPrompt}". Respond with ONLY the title, no extras.`;
+    const messages = [{ role: 'system', content: 'You are a title generator. Output only the title.' }];
+    // Pass model param to getBotAnswer (no global override)
+    const response = await getBotAnswer(titlePrompt, messages, config.models.default);  // FIXED: Pass default model
+    const generatedTitle = response.main.trim() || `Chat ${chats.length + 1}`; // Fallback
+    // Update chat
+    const chat = chats.find(c => c.id === chatId);
+    if (chat) {
+      chat.title = generatedTitle;
+      chat.titleGenerated = true;
+      saveChats();
+      loadChatList(); // Refresh UI
+    }
+    return generatedTitle;
+  }
 
   // Individual Chats Logic
   function initChats() {
     if (chats.length === 0) {
       createNewChat();
     }
+    // Check for pending title gens on load – UPDATED: Better placeholder check
+    chats.forEach(async (chat) => {
+      if (!chat.hasOwnProperty('titleGenerated') || !chat.titleGenerated) {  // Handle legacy chats
+        if (chat.title && (chat.title.startsWith('Chat ') || chat.title === 'New Sync...')) {
+          const lastUserMsg = chat.messages.findLast(m => m.role === 'user')?.content || 'New conversation';
+          await generateChatTitle(lastUserMsg, chat.id);
+        }
+      }
+    });
     loadChatList();
     loadCurrentChat();
   }
@@ -56,9 +105,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const newId = `chat-${Date.now()}`;
     const newChat = {
       id: newId,
-      title: `Chat ${chats.length + 1}`,
-      preview: 'New neural sync...',
-      messages: [{ role: 'system', content: '' }]  // Empty system for new
+      title: `New Sync...`, // Temp
+      preview: 'Awaiting transmission...',
+      messages: [], // Empty for truly new
+      titleGenerated: false
     };
     chats.push(newChat);
     saveChats();
@@ -94,11 +144,13 @@ document.addEventListener('DOMContentLoaded', () => {
           role: el.classList.contains('user') ? 'user' : 'assistant',
           content: el.querySelector('.content, .content-main, .content-think')?.textContent || el.textContent || ''
         })).filter(msg => msg.role && msg.content.trim());  // Extract clean
-        // Update preview/title based on last user msg
+        // Update preview/title based on last user msg (skip if AI-generated)
         const lastUser = currentChat.messages.findLast(m => m.role === 'user');
         if (lastUser) {
           currentChat.preview = lastUser.content.substring(0, 50) + '...';
-          currentChat.title = lastUser.content.substring(0, 30) + (lastUser.content.length > 30 ? '...' : '');
+          if (!currentChat.titleGenerated) {
+            currentChat.title = lastUser.content.substring(0, 30) + (lastUser.content.length > 30 ? '...' : '');
+          }
         }
         saveChats();
       }
@@ -114,12 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
     messagesEl.innerHTML = '';  // Clear without re-render loop
     const currentChat = chats.find(c => c.id === currentChatId);
     if (!currentChat) return createNewChat();
-    currentChat.messages.slice(1).forEach(msg => {  // Skip system
+    currentChat.messages.forEach(msg => {  // No skip system; assume clean
       const msgEl = createMessage(msg.role, msg.content);
       messagesEl.appendChild(msgEl);
     });
     scrollToBottom();
-    if (currentChat.messages.length <= 1) {
+    if (currentChat.messages.length === 0) {
       // Welcome for truly new
       const welcomeDiv = document.createElement('div');
       welcomeDiv.className = 'message bot';
@@ -146,46 +198,31 @@ document.addEventListener('DOMContentLoaded', () => {
   // Event Listeners for Chats
   newChatBtn.addEventListener('click', createNewChat);
 
-  // Model Sidebar Toggle (separate from chat sidebar)
-  modelToggle.addEventListener('click', () => {
-    modelSidebar.classList.toggle('open');
-    const isOpen = modelSidebar.classList.contains('open');
-    modelToggle.innerHTML = `<span class="icon">${isOpen ? '✕' : '⚙️'}</span><span class="label">${isOpen ? 'Close' : 'Neural Modes'}</span>`;
-  });
-
-  // Model Selection
+  // Model Selection (in unified sidebar)
   modelDropdown.addEventListener('click', async (e) => {
     if (e.target.closest('.dropdown-item')) {
-      const item = e.target.closest('.dropdown-item');
-      const mode = item.dataset.mode;
+      const mode = e.target.closest('.dropdown-item').dataset.mode;
       console.log(`🧠 SteveAI: Model selected – ${mode}`);
       const response = await getBotAnswer(`/model ${mode}`);
-      if (response.main) {
-        // Toast confirmation
-        const toast = document.createElement('div');
-        toast.className = 'model-toast';
-        toast.textContent = response.main;
-        toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,247,255,0.9); color: #000; padding: 1rem; border-radius: 8px; box-shadow: 0 0 20px var(--neon-cyan); z-index: 30; animation: slideIn 0.5s;';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-      }
-      modelSidebar.classList.remove('open');
-      modelToggle.innerHTML = '<span class="icon">⚙️</span><span class="label">Neural Modes</span>';
-      // Update status
-      statusBar.innerHTML += `<span style="color: var(--neon-purple); font-size: 0.7rem;"> | Mode: ${mode.toUpperCase()}</span>`;
-    }
-  });
-
-  // Close model sidebar on outside click
-  document.addEventListener('click', (e) => {
-    if (!modelSidebar.contains(e.target) && !modelToggle.contains(e.target)) {
-      modelSidebar.classList.remove('open');
-      modelToggle.innerHTML = '<span class="icon">⚙️</span><span class="label">Neural Modes</span>';
+      // Toast confirmation (simplified)
+      const toast = document.createElement('div');
+      toast.className = 'model-toast';
+      toast.textContent = `Switched to ${mode.toUpperCase()}`;
+      toast.style.cssText = 'position: fixed; top: 20px; right: 20px; background: rgba(0,247,255,0.9); color: #000; padding: 1rem; border-radius: 8px; box-shadow: 0 0 20px var(--neon-cyan); z-index: 30; animation: slideIn 0.5s;';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2000);
+      // Update status – UPDATED: Use mode key
+      statusBar.textContent = `Mode: ${mode.toUpperCase()}`;
+      // Close sidebar
+      toggleSidebar();
     }
   });
 
   // Set initial state: Button ENABLED
   sendBtn.disabled = false;
+  // UPDATED: Better initial status from config reverse-map
+  const initialMode = Object.keys(config.models).find(key => config.models[key] === currentModel) || 'DEFAULT';
+  statusBar.textContent = `Mode: ${initialMode.toUpperCase()}`;
   console.log('🧠 SteveAI: Send button enabled (initial).');
 
   // Enable/disable send button when typing
@@ -212,6 +249,9 @@ document.addEventListener('DOMContentLoaded', () => {
     sendBtn.disabled = true;
     userInput.focus();
 
+    const currentChat = chats.find(c => c.id === currentChatId);
+    const isFirstMessage = currentChat.messages.length === 0;
+
     // Add user message (append, no re-render)
     const userMsg = createMessage('user', prompt);
     messagesEl.appendChild(userMsg);
@@ -228,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       if (typeof getBotAnswer === 'function') {
-        responseData = await getBotAnswer(prompt);
+        responseData = await getBotAnswer(prompt, currentChat.messages);  // Pass chat messages for context
       } else {
         responseData.main = `Mock: Hi back! "${prompt}" – Interface glitching?`;
       }
@@ -237,14 +277,18 @@ document.addEventListener('DOMContentLoaded', () => {
       responseData.main = 'Signal lost. Rebooting interface...';
     } finally {
       renderBotResponse(botMsg, responseData);
-      sendBtn.disabled = false;
-      // Update current chat preview/title
-      const currentChat = chats.find(c => c.id === currentChatId);
-      if (currentChat) {
+      // Add to chat messages (main only)
+      currentChat.messages.push({ role: 'user', content: prompt });
+      currentChat.messages.push({ role: 'assistant', content: responseData.main });
+      // If first, gen title
+      if (isFirstMessage) {
+        await generateChatTitle(prompt, currentChatId);
+      } else {
         currentChat.preview = prompt.substring(0, 50) + '...';
         saveChats();
         loadChatList();  // Refresh list preview
       }
+      sendBtn.disabled = false;
     }
   });
 
@@ -313,7 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Create message (as before)
+  // Create message (as before) - For history load, assume content is main (stripped)
   function createMessage(sender, text) {
     const div = document.createElement('div');
     div.className = `message ${sender}`;

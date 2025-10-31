@@ -1,6 +1,8 @@
 // functions/chat.js: All text chat bot logic—getBotAnswer() is your one-stop API handler.
 // Modular: Use in chat.html, or import elsewhere (e.g., for commands like /image).
 // Updates for Individual Chats: Now accepts `messages` array as param (non-global). Commands/fallbacks return {main, thinking: null}. System prompt injected if missing.
+// NEW: Optional `model` param in getBotAnswer for per-call overrides (e.g., title gen with 'SteveAI-default' without changing session model).
+// FIX: Stubbed /export and clearSession to avoid reliance on undefined globals (chats/currentChatId from chat.js); use localStorage directly or pass if needed.
 
 import config from '../config.js';  // Adjust path if needed
 
@@ -18,8 +20,11 @@ function parseThinkTags(text) {
   return { main: text, thinking: null };
 }
 
-// Export main function: Get bot answer for a user prompt (handles commands, API call) – Now takes messages array
-export async function getBotAnswer(userPrompt, messages = []) {
+// Export main function: Get bot answer for a user prompt (handles commands, API call) – Now takes messages array + optional model
+export async function getBotAnswer(userPrompt, messages = [], model = null) {  // NEW: optional model param
+  // Use passed model or global
+  const effectiveModel = model || currentModel;
+
   // Ensure system prompt is first if missing
   if (messages.length === 0 || messages[0].role !== 'system') {
     messages = [{ role: 'system', content: config.systemPrompt }, ...messages];
@@ -41,7 +46,7 @@ export async function getBotAnswer(userPrompt, messages = []) {
 
   if (config.debug) {
     console.log('SteveAI Chat Payload:', {
-      model: currentModel,
+      model: effectiveModel,  // Use effective
       messages: chatMessages.slice(-10),  // Limit context
       temperature: config.temperature,
       max_tokens: config.maxTokens
@@ -57,7 +62,7 @@ export async function getBotAnswer(userPrompt, messages = []) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: currentModel,
+        model: effectiveModel,  // Use effective
         messages: chatMessages.slice(-10),  // System + recent
         temperature: config.temperature,  // 0.7
         max_tokens: config.maxTokens  // 150
@@ -115,11 +120,13 @@ async function handleCommand(text) {
       }
       currentModel = config.models[mode];
       localStorage.setItem('steveai_current_model', currentModel);
-      return `Mode switched to **${mode.toUpperCase()}** (${currentModel}) – Neural pathways recalibrated! 🚀`;
+      return `Mode switched to **${mode.toUpperCase()}** (${currentModel}) – Neural pathways recalibrated!  🚀`;
 
     case '/export':
-      // For individual chats, export current – but since no global, stub or adapt
-      const exportData = JSON.stringify({ currentChat: currentChatId, chats: chats }, null, 2);  // Pseudo – adapt if needed
+      // FIXED: Use localStorage directly (no reliance on chat.js globals)
+      const chatsData = JSON.parse(localStorage.getItem('steveai_chats') || '[]');
+      const currentChatIdData = localStorage.getItem('steveai_current_chat') || 'none';
+      const exportData = JSON.stringify({ currentChat: currentChatIdData, chats: chatsData }, null, 2);
       const blob = new Blob([exportData], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -150,11 +157,11 @@ export function loadTheme() {
 }
 
 export function clearSession() {
+  // FIXED: No globals; just clear localStorage
   localStorage.removeItem('steveai_chats');
   localStorage.removeItem('steveai_current_chat');
   localStorage.removeItem('steveai_theme');
   localStorage.removeItem('steveai_current_model');
-  chats = [];
   currentModel = config.models.default;
 }
 
