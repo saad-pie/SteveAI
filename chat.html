@@ -6,11 +6,11 @@
   <title>SteveAI 2.0</title>
   <link rel="stylesheet" href="chat.css" />
 </head>
-<body>
+<body class="dark">  <!-- FIXED: Add initial 'dark' class for theme load -->
   <!-- Unified Sliding Sidebar (Grok-style: Chats + Models) -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
-      <button class="hamburger" id="hamburger-toggle">
+      <button class="hamburger" id="hamburger-toggle" style="position: fixed; top: 1rem; left: 1rem; z-index: 21;">  <!-- FIXED: Fixed pos/z for always visible -->
         <span></span><span></span><span></span> <!-- Three lines SVG-like -->
       </button>
       <h3 class="sidebar-title">Neural Chats</h3>
@@ -43,7 +43,8 @@
     </div>
   </aside>
   <!-- Overlay for mobile slide -->
-  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+  <div class="sidebar-overlay" id="sidebar-overlay" style="z-index: 19;">  <!-- FIXED: Initial z for overlay -->
+  </div>
 
   <div class="bg-grid"></div>
   <div class="particles" id="particles"></div>
@@ -51,7 +52,7 @@
   <div class="chat-container">
     <div class="chat-header">
       <div class="logo">STEVEAI 2.0</div>
-      <div class="status-bar" id="status-bar">Mode: DEFAULT</div>
+      <div class="status-bar" id="status-bar">Mode: DEFAULT</div>  <!-- FIXED: Move to header for layout, JS updates -->
     </div>
 
     <div class="messages" id="messages">
