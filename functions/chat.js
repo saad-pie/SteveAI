@@ -2,12 +2,9 @@
 // Modular: Use in chat.html, or import elsewhere (e.g., for commands like /image).
 // Updates for Individual Chats: Now accepts `messages` array as param (non-global). Commands/fallbacks return {main, thinking: null}. System prompt injected if missing.
 // NEW: Optional `model` param in getBotAnswer for per-call overrides (e.g., title gen with 'SteveAI-default' without changing session model).
-// FIX: Stubbed /export and clearSession to avoid reliance on undefined globals (chats/currentChatId from chat.js); use localStorage directly or pass if needed.
+// FIXES (Oct 31, 2025): No global currentModel (always pass/use effectiveModel), handleCommand returns {handled: bool, response: {main, thinking: null}} for early exit (no orb on cmds), fetch AbortController timeout (30s fast cap, no stuck), A4F response fallback data.result, /model updates localStorage only (no global), save full {main, thinking} in context (reload persistence), debug logs effectiveModel. Stub /export/clearSession localStorage direct. Aligns with chat.js (handled flag, obj save), config.js (models map, systemPrompt <think>-enabled).
 
 import config from '../config.js';  // Adjust path if needed
-
-// Global state: Current AI model (session-persisted via localStorage)
-let currentModel = localStorage.getItem('steveai_current_model') || config.models.default;
 
 // Function to parse <think> tags (Gemini-specific reasoning artifact)
 function parseThinkTags(text) {
@@ -21,9 +18,8 @@ function parseThinkTags(text) {
 }
 
 // Export main function: Get bot answer for a user prompt (handles commands, API call) – Now takes messages array + optional model
-export async function getBotAnswer(userPrompt, messages = [], model = null) {  // NEW: optional model param
-  // Use passed model or global
-  const effectiveModel = model || currentModel;
+export async function getBotAnswer(userPrompt, messages = [], model = config.models.default) {  // FIXED: Default to config, always pass
+  const effectiveModel = model;  // No global—always use passed
 
   // Ensure system prompt is first if missing
   if (messages.length === 0 || messages[0].role !== 'system') {
@@ -33,28 +29,29 @@ export async function getBotAnswer(userPrompt, messages = [], model = null) {  /
   // Clone messages to avoid mutating original (per-chat isolation)
   const chatMessages = [...messages];
 
-  // Add user message to this chat's context
-  chatMessages.push({ role: 'user', content: userPrompt });
-
-  // Parse commands (e.g., /clear, /help)
-  const commandResponse = await handleCommand(userPrompt);
-  if (commandResponse !== false) {
-    const { main } = parseThinkTags(commandResponse);  // Commands have no <think>
-    chatMessages.push({ role: 'assistant', content: main });
-    return { main, thinking: null };
+  // Command check FIRST (before user push, no context needed)
+  const commandResult = handleCommand(userPrompt);
+  if (commandResult.handled) {
+    // Return direct for early exit in chat.js (no orb)
+    return commandResult.response;
   }
+
+  // Add user message to this chat's context (non-cmd only)
+  chatMessages.push({ role: 'user', content: userPrompt });
 
   if (config.debug) {
     console.log('SteveAI Chat Payload:', {
-      model: effectiveModel,  // Use effective
+      model: effectiveModel,
       messages: chatMessages.slice(-10),  // Limit context
       temperature: config.temperature,
       max_tokens: config.maxTokens
     });
   }
 
-  // Call A4F (exact curl match)
+  // Call A4F (exact curl match) – FIXED: AbortController timeout, data.result fallback
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);  // 30s cap for fast/no hang
     const response = await fetch(config.a4fChatUrl, {
       method: 'POST',
       headers: {
@@ -66,8 +63,10 @@ export async function getBotAnswer(userPrompt, messages = [], model = null) {  /
         messages: chatMessages.slice(-10),  // System + recent
         temperature: config.temperature,  // 0.7
         max_tokens: config.maxTokens  // 150
-      })
+      }),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -75,13 +74,15 @@ export async function getBotAnswer(userPrompt, messages = [], model = null) {  /
     }
 
     const data = await response.json();
-    let rawReply = data.choices[0]?.message?.content?.trim() || 'No response—glitch in the matrix?';
+    let rawReply = data.choices?.[0]?.message?.content?.trim() || 
+                   data.result?.trim() ||  // FIXED: A4F variant fallback
+                   'No response—glitch in the matrix?';
 
     // Parse for <think> tags
     const { main, thinking } = parseThinkTags(rawReply);
 
-    // Add to this chat's context (main only – thinking ephemeral)
-    chatMessages.push({ role: 'assistant', content: main });
+    // Add to this chat's context (full for persistence – FIXED: Include thinking)
+    chatMessages.push({ role: 'assistant', content: main, thinking });
 
     return { main, thinking };
   } catch (error) {
@@ -90,37 +91,44 @@ export async function getBotAnswer(userPrompt, messages = [], model = null) {  /
     const fallbackMain = config.debug
       ? `Debug: ${error.message}\n\n(Mocking: API gateways? They're the unsung heroes routing your requests securely—like a futuristic portal gun for data!)`
       : 'Whoa, signal jam—try rephrasing? (I\'m SteveAI, always plotting my comeback.)';
-    chatMessages.push({ role: 'assistant', content: fallbackMain });
+    chatMessages.push({ role: 'assistant', content: fallbackMain, thinking: null });
     return { main: fallbackMain, thinking: null };
   }
 }
 
-// Command handler: Process /commands before AI (now returns string for main)
-async function handleCommand(text) {
-  if (!text.startsWith('/')) return false;
+// Command handler: Process /commands before AI (now returns {handled, response} for early exit)
+function handleCommand(text) {  // FIXED: Sync (no async needed), return obj
+  if (!text.startsWith('/')) return { handled: false };
 
   const cmd = text.split(' ')[0].toLowerCase();
+  let main = '';
   switch (cmd) {
     case '/clear':
-      return 'Chat wiped—fresh timeline activated! 🚀';
+      clearSession();  // Util func
+      main = 'Chat wiped—fresh timeline activated! 🚀';
+      break;
 
     case '/help':
-      return `SteveAI Commands:\n/clear - Reset chat\n/theme dark|light - Toggle mode\n/model default|general|fast|reasoning - Switch AI mode\n/export - Save as JSON\n/help - This list\n/image <prompt> - Gen image (coming soon)\n\nAsk away!`;
+      main = `SteveAI Commands:\n/clear - Reset chat\n/theme dark|light - Toggle mode\n/model default|general|fast|reasoning - Switch AI mode\n/export - Save as JSON\n/help - This list\n/image <prompt> - Gen image (coming soon)\n\nAsk away!`;
+      break;
 
     case '/theme':
       const theme = text.split(' ')[1] || config.defaultTheme;
       document.body.classList.toggle('dark', theme === 'dark');
       localStorage.setItem('steveai_theme', theme);
-      return `Theme switched to ${theme}!`;
+      main = `Theme switched to ${theme}!`;
+      break;
 
     case '/model':
       const mode = text.split(' ')[1]?.toLowerCase();
       if (!mode || !['default', 'general', 'fast', 'reasoning'].includes(mode)) {
-        return 'Available modes: default (GPT-5-nano), general (Grok-4), fast (Gemini Flash), reasoning (DeepSeek V3). Usage: /model <mode>';
+        main = 'Available modes: default (GPT-5-nano), general (Grok-4), fast (Gemini Flash), reasoning (DeepSeek V3). Usage: /model <mode>';
+      } else {
+        // FIXED: localStorage only (no global var)
+        localStorage.setItem('steveai_current_model', config.models[mode]);
+        main = `Mode switched to **${mode.toUpperCase()}** (${config.models[mode]}) – Neural pathways recalibrated! 🚀`;
       }
-      currentModel = config.models[mode];
-      localStorage.setItem('steveai_current_model', currentModel);
-      return `Mode switched to **${mode.toUpperCase()}** (${currentModel}) – Neural pathways recalibrated!  🚀`;
+      break;
 
     case '/export':
       // FIXED: Use localStorage directly (no reliance on chat.js globals)
@@ -134,20 +142,24 @@ async function handleCommand(text) {
       a.download = 'steveai-chats.json';
       a.click();
       URL.revokeObjectURL(url);
-      return "Chats exported—your convos's eternal!";
+      main = "Chats exported—your convos's eternal!";
+      break;
 
     // Stub for /image (calls a future function)
     case '/image':
       const imgPrompt = text.slice(7).trim();
       if (imgPrompt) {
         // TODO: import { generateImage } from './image.js'; await generateImage(imgPrompt);
-        return `Image gen queued for "${imgPrompt}" (feature incoming—stay tuned!)`;
+        main = `Image gen queued for "${imgPrompt}" (feature incoming—stay tuned!)`;
+      } else {
+        main = 'Usage: /image <your prompt here>';
       }
-      return 'Usage: /image <your prompt here>';
+      break;
 
     default:
-      return 'Unknown command—type /help for options. (Pro tip: I\'m forgiving.)';
+      main = 'Unknown command—type /help for options. (Pro tip: I\'m forgiving.)';
   }
+  return { handled: true, response: { main, thinking: null } };
 }
 
 // Utils: Load/save theme, clear session (for other files)
@@ -162,7 +174,6 @@ export function clearSession() {
   localStorage.removeItem('steveai_current_chat');
   localStorage.removeItem('steveai_theme');
   localStorage.removeItem('steveai_current_model');
-  currentModel = config.models.default;
 }
 
 // For testing in Node/Termux: if (typeof module !== 'undefined') { ... }
