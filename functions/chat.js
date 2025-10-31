@@ -1,6 +1,5 @@
 // functions/chat.js: All text chat bot logic—getBotAnswer() is your one-stop API handler.
-// Modular: Use in chat.html, or import elsewhere (e.g., for commands like /image).
-
+// Modular: Use in chat.html, or import elsewhere (e.g., for commands like /image).                         
 import config from '../config.js';  // Adjust path if needed
 
 // Global state: Messages history (session-persisted via localStorage)
@@ -112,7 +111,7 @@ async function handleCommand(text) {
       a.download = 'steveai-chat.json';
       a.click();
       URL.revokeObjectURL(url);
-      return 'Chat exported—your convo's eternal!';
+      return "Chat exported—your convo's eternal!";
 
     // Stub for /image (calls a future function)
     case '/image':
