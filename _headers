@@ -1,6 +1,0 @@
-# _headers file for Netlify – FIXED: Targets ONLY .js files (not /* to avoid breaking HTML)
-# Place in root (next to chat.html). Redeploy (git push or drag-drop).
-
-/*.js
-  Content-Type: application/javascript
-

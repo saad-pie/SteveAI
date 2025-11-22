@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SteveAI Docs – SteveAI-General Update 2025 | AI Chat, Coding & Image Generation</title>
+
+  <meta name="description" content="Official SteveAI Documentation for SteveAI-General 2025 – the most advanced AI assistant surpassing Grok 4 0709. Learn chat, reasoning, coding, image generation, and commands.">
+  <meta name="keywords" content="SteveAI, SteveAI-General, AI assistant, AI chat, reasoning AI, coding AI, AI image generation, Grok 4, AI commands, next-gen AI 2025, advanced AI documentation">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="Saadpie">
+  <meta name="theme-color" content="#111">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SteveAI Docs – SteveAI-General Update 2025">
+  <meta property="og:description" content="Explore SteveAI-General, surpassing Grok 4 0709 with insane features: reasoning, coding, image generation, commands, and AI chat.">
+  <meta property="og:url" content="https://steve-ai.netlify.app/docs.html">
+  <meta property="og:image" content="https://steve-ai.netlify.app/assets/steveai-update-banner.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SteveAI Docs – SteveAI-General Update 2025">
+  <meta property="twitter:description" content="SteveAI-General surpasses Grok 4 0709 with insane AI features. Learn to chat, code, and generate images with next-gen intelligence.">
+  <meta property="twitter:image" content="https://steve-ai.netlify.app/assets/steveai-update-banner.png">
+
+  <link rel="canonical" href="https://steve-ai.netlify.app/docs.html">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "headline": "SteveAI Documentation – SteveAI-General Update 2025",
+    "description": "Official documentation for SteveAI-General 2025: Chat, reasoning, coding, image generation, commands, and next-gen AI features.",
+    "author": {
+      "@type": "Person",
+      "name": "Saadpie"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "SteveAI",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://steve-ai.netlify.app/assets/favicon.png"
+      }
+    },
+    "datePublished": "2025-10-19",
+    "mainEntityOfPage": "https://steve-ai.netlify.app/docs.html"
+  }
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+
+  <link rel="icon" href="/assets/favicon.png">
+
+  <style>
+    /* Global Reset & Base Styling */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #0c0c0c; /* Deep Dark Background */
+      color: #e0e0e0; /* Light Gray Text */
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    /* Header Styling */
+    header {
+      background: #1a1a1a;
+      color: #fff;
+      padding: 1rem 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #00ffcc; /* Accent line */
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      color: #00ffcc; /* Accent color for title */
+    }
+    nav a {
+      color: #e0e0e0;
+      text-decoration: none;
+      margin-left: 1.5rem;
+      padding: 0.5rem 0.8rem;
+      border-radius: 4px;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    nav a:hover, nav a.active {
+      background-color: #2c2c2c;
+      color: #00ffcc;
+    }
+
+    /* Main Content Area */
+    main {
+      flex-grow: 1;
+      max-width: 1000px;
+      width: 90%;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    /* Section Styling */
+    section {
+      background: #1a1a1a;
+      padding: 2rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+    }
+    section h2 {
+      color: #00ffcc; /* Accent color for section headings */
+      border-bottom: 1px solid #333;
+      padding-bottom: 0.5rem;
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    /* Update Banner Specific Styles (re-applied from index.html) */
+    .update-banner {
+      background: linear-gradient(135deg, #1b1b1b, #333); /* Gradient background */
+      border: 2px solid #00ffcc;
+      text-shadow: 0 0 5px rgba(0, 255, 204, 0.5);
+    }
+    .update-banner strong {
+      color: #fff;
+      font-weight: 700;
+    }
+    .update-banner ul {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 1rem;
+      /* Using columns for a tighter doc look */
+      column-count: 2; 
+      column-gap: 20px;
+    }
+    .update-banner ul li {
+      background: #2c2c2c;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border-left: 3px solid #00ffcc;
+      margin-bottom: 10px;
+      break-inside: avoid; /* Keeps list items together */
+    }
+
+    /* General List and Link Styling */
+    ul, ol {
+      padding-left: 20px;
+    }
+    ul li, ol li {
+      margin-bottom: 0.8rem;
+    }
+    a {
+      color: #00ffcc;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    a:hover {
+      color: #00e6b8;
+      text-decoration: underline;
+    }
+    
+    /* Command Styling */
+    code {
+      background-color: #2c2c2c;
+      color: #ffae00; /* Amber/orange color for commands */
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.95rem;
+    }
+
+    /* FAQ (Details/Summary) Styling */
+    details {
+      background-color: #252525;
+      border: 1px solid #3a3a3a;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      transition: background-color 0.2s;
+    }
+    details:hover {
+      background-color: #303030;
+    }
+    summary {
+      padding: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: #00ffcc; /* Accent color for questions */
+      outline: none;
+      user-select: none;
+      list-style-type: none; /* Hide default arrow */
+    }
+    summary::before {
+      content: '▶️'; /* Custom arrow symbol */
+      margin-right: 10px;
+      transition: transform 0.2s;
+      display: inline-block;
+    }
+    details[open] > summary::before {
+      content: '🔽';
+      transform: rotate(90deg);
+    }
+    details p {
+      padding: 0 1rem 1rem 1rem;
+      border-top: 1px solid #3a3a3a;
+      margin: 0;
+    }
+    
+    /* Footer Styling */
+    footer {
+      background: #1a1a1a;
+      color: #777;
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.9rem;
+      border-top: 1px solid #2c2c2c;
+    }
+    footer a {
+      color: #00ffcc;
+      font-weight: bold;
+    }
+  </style>
+  </head>
+
+<body>
+  <header>
+    <h1>SteveAI Documentation</h1>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/about.html">About</a>
+      <a href="/docs.html" class="active">Docs</a>
+      <a href="/chat.html">Chat</a>
+      <a href="/image.html">Image</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <section class="update-banner">
+      <h2>🚀 Major Update: <strong>SteveAI-General 2025</strong></h2>
+      <p>
+        SteveAI-General now surpasses <strong>Grok 4 0709</strong> in speed, intelligence, and features.  
+        Unlock lightning-fast reasoning, deep context understanding, AI-assisted coding, and next-level image generation.
+      </p>
+      <ul>
+        <li>⚡ Ultra-fast logical reasoning and multi-step problem solving</li>
+        <li>💬 Smarter AI chat with deeper context awareness</li>
+        <li>💻 AI coding assistance, debugging, and suggestions</li>
+        <li>🎨 Image generation and creative content creation</li>
+        <li>🔍 Advanced command system integrated with full documentation</li>
+        <li>🌙 Dark/Light theme support, chat export, and /play summaries</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Introduction</h2>
+      <p>
+        Welcome to the official <strong>SteveAI Documentation</strong>.  
+        This guide covers everything about using SteveAI-General — from chatting and coding to generating images and leveraging advanced AI reasoning.
+      </p>
+    </section>
+
+    <section>
+      <h2>Getting Started</h2>
+      <ol>
+        <li>Open the <a href="/chat.html">Chat</a> page to start a conversation.</li>
+        <li>Type your question, command, or creative prompt.</li>
+        <li>Press <strong>Enter</strong> or click <strong>Send</strong> for instant AI responses.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>About SteveAI-General</h2>
+      <p>
+        SteveAI-General is the next-generation reasoning engine that powers all interactions.  
+        It exceeds Grok 4 0709 in every dimension: speed, logic, creativity, and adaptability. Key highlights:
+      </p>
+      <ul>
+        <li>🧠 Multi-step logical reasoning and problem-solving</li>
+        <li>⚡ Ultra-low latency responses</li>
+        <li>🔍 Superior context retention and memory</li>
+        <li>🎯 Adaptive creativity and advanced AI decision-making</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Features</h2>
+      <ul>
+        <li>💬 Intelligent conversational AI with reasoning</li>
+        <li>💻 AI-assisted coding, debugging, and code generation</li>
+        <li>🖼️ High-quality AI image generation</li>
+        <li>🧠 Context-aware responses and deep understanding</li>
+        <li>🎯 Advanced command system (<code style="color:#00ffcc">/clear</code>, <code style="color:#00ffcc">/theme</code>, <code style="color:#00ffcc">/help</code>, <code style="color:#00ffcc">/image</code>, <code style="color:#00ffcc">/export</code>, <code style="color:#00ffcc">/contact</code>, <code style="color:#00ffcc">/play</code>)</li>
+        <li>🌙 Dark/Light theme toggle</li>
+        <li>🗑️ One-click chat clearing</li>
+        <li>📦 Export chats in .txt or .json format</li>
+        <li>📧 Integrated contact via <strong>saadabdulrehman2010@gmail.com</strong></li>
+        <li>📝 Markdown & syntax highlighting support</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Commands</h2>
+      <ul>
+        <li><code>/clear</code> – Clears current chat session</li>
+        <li><code>/theme</code> – Toggles dark/light mode</li>
+        <li><code>/help</code> – Lists available commands</li>
+        <li><code>/image &lt;prompt&gt;</code> – Generates an image from text</li>
+        <li><code>/export</code> – Exports your chat as .txt or .json</li>
+        <li><code>/contact</code> – Opens contact form or mailto <strong>saadabdulrehman2010@gmail.com</strong></li>
+        <li><code>/play</code> – Generates a summary of your conversation</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>FAQ</h2>
+      <details>
+        <summary>Is SteveAI free?</summary>
+        <p>Yes! SteveAI is completely free on the web with no signup required.</p>
+      </details>
+      <details>
+        <summary>Does SteveAI store chat history?</summary>
+        <p>No. Chats are temporary and private; your data is not permanently stored.</p>
+      </details>
+      <details>
+        <summary>Can I generate images?</summary>
+        <p>Yes! Use the <a href="/image.html">Image Generator</a> page for instant AI image creation.</p>
+      </details>
+      <details>
+        <summary>How does SteveAI-General’s reasoning model work?</summary>
+        <p>
+          It uses multi-chain reasoning for both logic and creativity, giving fast, accurate, and context-aware AI responses far beyond traditional transformer-only models like DeepSeekV3-0324.
+        </p>
+      </details>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>
+      © 2025 <strong>SteveAI</strong> – Powered by <strong>SteveAI-General</strong> • Created with ❤️ by 
+      <a href="https://github.com/saad-pie" target="_blank">Saadpie</a> • Contact: 
+      <a href="mailto:saadabdulrehman2010@gmail.com">saadabdulrehman2010@gmail.com</a>
+    </p>
+  </footer>
+</body>
+</html>

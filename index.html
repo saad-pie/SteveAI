@@ -1,27 +1,251 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SteveAI - The Bot from the Future</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <nav>
-        <ul>
-            <li><a href="index.html">Home</a></li>
-            <li><a href="chat.html">Chat</a></li>
-            <li><a href="image.html">Image</a></li>
-            <li><a href="docs.html">Docs</a></li>
-            <li><a href="login.html">Login</a></li>
-        </ul>
-    </nav>
-    <main>
-        <h1>🚀 Welcome to SteveAI v2</h1>
-        <p>Surpassing the best—chat, create, code with AI.</p>
-        <a href="chat.html" class="btn">Start Chatting</a>
-    </main>
-    <script src="script.js"></script>
-</body>
-</html>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SteveAI – Ultimate AI Assistant | SteveAI-General Update 2025</title>
 
+  <meta name="description" content="SteveAI-General is the most advanced AI assistant in 2025, surpassing Grok 4 0709. Chat, reason, code, generate images, and explore features beyond imagination. Experience insane performance, creativity, and intelligence.">
+  <meta name="keywords" content="SteveAI, AI assistant, AI chat, SteveAI-General, Grok 4, AI image generation, reasoning AI, coding AI, next-generation AI, intelligent assistant, AI 2025, deep learning assistant">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="Saadpie">
+  <meta name="theme-color" content="#111">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="SteveAI – Ultimate AI Assistant | SteveAI-General Update 2025">
+  <meta property="og:description" content="SteveAI-General surpasses Grok 4 0709 with insane features. Chat, reason, code, and generate images with the most advanced AI assistant of 2025.">
+  <meta property="og:url" content="https://steve-ai.netlify.app/">
+  <meta property="og:image" content="https://steve-ai.netlify.app/assets/steveai-update-banner.png">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SteveAI – Ultimate AI Assistant | SteveAI-General Update 2025">
+  <meta property="twitter:description" content="SteveAI-General surpasses Grok 4 0709 with insane AI features. Explore next-gen reasoning, coding, and image generation capabilities.">
+  <meta property="twitter:image" content="https://steve-ai.netlify.app/assets/steveai-update-banner.png">
+
+  <link rel="canonical" href="https://steve-ai.netlify.app/">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "SteveAI",
+    "url": "https://steve-ai.netlify.app/",
+    "applicationCategory": "Artificial Intelligence",
+    "operatingSystem": "Web-based",
+    "description": "SteveAI-General is the most advanced AI assistant in 2025, surpassing Grok 4 0709. Features include advanced reasoning, AI chat, coding, and image generation.",
+    "author": {
+      "@type": "Person",
+      "name": "Saadpie"
+    },
+    "datePublished": "2025-10-19",
+    "version": "SteveAI-General 1.0",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
+  <link rel="stylesheet" href="style.css">
+
+  <link rel="icon" href="/assets/favicon.png">
+
+  <style>
+    /* Global Reset & Base Styling */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #0c0c0c; /* Deep Dark Background */
+      color: #e0e0e0; /* Light Gray Text */
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    
+    /* Header Styling */
+    header {
+      background: #1a1a1a;
+      color: #fff;
+      padding: 1rem 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #00ffcc; /* Accent line */
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      color: #00ffcc; /* Accent color for title */
+    }
+    nav a {
+      color: #e0e0e0;
+      text-decoration: none;
+      margin-left: 1.5rem;
+      padding: 0.5rem 0.8rem;
+      border-radius: 4px;
+      transition: background-color 0.2s, color 0.2s;
+    }
+    nav a:hover, nav a.active {
+      background-color: #2c2c2c;
+      color: #00ffcc;
+    }
+
+    /* Main Content Area */
+    main {
+      flex-grow: 1;
+      max-width: 1000px;
+      width: 90%;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    /* Section Styling */
+    section {
+      background: #1a1a1a;
+      padding: 2rem;
+      border-radius: 12px;
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+    }
+    section h2 {
+      color: #00ffcc; /* Accent color for section headings */
+      border-bottom: 1px solid #333;
+      padding-bottom: 0.5rem;
+      margin-top: 0;
+      font-size: 1.5rem;
+    }
+
+    /* Update Banner Specific Styles */
+    .update-banner {
+      background: linear-gradient(135deg, #1b1b1b, #333); /* Gradient background */
+      border: 2px solid #00ffcc;
+      text-shadow: 0 0 5px rgba(0, 255, 204, 0.5);
+    }
+    .update-banner strong {
+      color: #fff;
+      font-weight: 700;
+    }
+    .update-banner ul {
+      list-style: none;
+      padding-left: 0;
+      margin-top: 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .update-banner ul li {
+      background: #2c2c2c;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border-left: 3px solid #00ffcc;
+      transition: transform 0.2s;
+    }
+    .update-banner ul li:hover {
+      transform: translateY(-2px);
+      background: #3a3a3a;
+    }
+
+    /* List and Link Styling */
+    ul {
+      padding-left: 20px;
+    }
+    ul li {
+      margin-bottom: 0.8rem;
+    }
+    a {
+      color: #00ffcc;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    a:hover {
+      color: #00e6b8;
+      text-decoration: underline;
+    }
+
+    /* Footer Styling */
+    footer {
+      background: #1a1a1a;
+      color: #777;
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.9rem;
+      border-top: 1px solid #2c2c2c;
+    }
+    footer a {
+      color: #00ffcc;
+      font-weight: bold;
+    }
+  </style>
+  </head>
+
+<body>
+  <header>
+    <h1>SteveAI</h1>
+    <nav>
+      <a href="/" class="active">Home</a>
+      <a href="/about.html">About</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/chat.html">Chat</a>
+      <a href="/image.html">Image</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <section class="update-banner">
+      <h2>🚀 New Update: <strong>SteveAI-General</strong> (2025)</h2>
+      <p>
+        Say goodbye to Grok 4 0709 — <strong>SteveAI-General</strong> is here, packed with insane features:  
+        lightning-fast reasoning, ultra-creative AI chat, coding assistance, image generation, and advanced context understanding.  
+        Dive into the smartest, most versatile AI assistant ever made.
+      </p>
+      <ul>
+        <li>⚡ Faster reasoning and response times than any previous model</li>
+        <li>🧠 Deep context-aware understanding for smarter conversations</li>
+        <li>💻 AI-assisted coding, debugging, and code suggestions</li>
+        <li>🎨 Image generation and creative content creation</li>
+        <li>🔍 Advanced command support and detailed docs integration</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Welcome to SteveAI</h2>
+      <p>
+        <strong>SteveAI</strong> is your all-in-one AI companion.  
+        Explore, chat, create, and learn using <strong>SteveAI-General</strong>, the next-level reasoning model that makes AI interaction smarter, faster, and infinitely more creative.
+      </p>
+    </section>
+
+    <section>
+      <h2>Core Capabilities</h2>
+      <ul>
+        <li>💬 Advanced AI Chat with logical reasoning</li>
+        <li>🖼️ Image generation with unprecedented creativity</li>
+        <li>💻 Code generation, debugging, and intelligent suggestions</li>
+        <li>🧠 Deep context awareness and memory for smarter interactions</li>
+        <li>🌙 Theme customization (Dark/Light mode)</li>
+        <li>📚 Comprehensive documentation and command support</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Quick Links</h2>
+      <ul>
+        <li>💬 <a href="/chat.html">Start Chatting</a></li>
+        <li>🧠 <a href="/docs.html">Read the Docs</a></li>
+        <li>🖼️ <a href="/image.html">Generate Images</a></li>
+        <li>ℹ️ <a href="/about.html">Learn More About SteveAI</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 <strong>SteveAI</strong> – Powered by <strong>SteveAI-General</strong> • Created with ❤️ by <a href="https://github.com/saad-pie" target="_blank">Saadpie</a></p>
+  </footer>
+</body>
+  </html>
+  

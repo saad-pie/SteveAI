@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SteveAI Live Voice Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #1e1e1e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        #chat-container {
+            width: 100%;
+            max-width: 600px;
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            background-color: #2a2a2a;
+            margin-bottom: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+        .user {
+            background-color: #007bff;
+            align-self: flex-end;
+            margin-left: 20%;
+        }
+        .ai {
+            background-color: #444;
+            align-self: flex-start;
+            margin-right: 20%;
+        }
+        #controls {
+            display: flex;
+            gap: 20px;
+            padding: 10px;
+            background-color: #111;
+            width: 100%;
+            max-width: 600px;
+            border-radius: 8px;
+            justify-content: center;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        #record-btn {
+            background-color: #ff4500;
+            color: white;
+        }
+        #record-btn:hover:not(:disabled) {
+            background-color: #e03c00;
+        }
+        #status {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #ffae00;
+        }
+        #model-info {
+            font-size: 0.8em;
+            color: #888;
+            margin-bottom: 15px;
+        }
+        .recording {
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 69, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 69, 0, 0); }
+        }
+    </style>
+</head>
+<body>
+    <div id="model-info">
+        Model: models/gemini-2.5-flash-native-audio-preview-09-2025
+    </div>
+    <div id="chat-container">
+        </div>
+    <div id="controls">
+        <button id="record-btn">🎤 Start Recording</button>
+        <button id="stop-btn" disabled>🛑 Stop/Send</button>
+    </div>
+    <div id="status">Ready</div>
+
+    <script src="live.js"></script>
+</body>
+</html>
