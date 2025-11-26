@@ -34,12 +34,16 @@ export const IMAGE_MODELS = [
     { id: "provider-2/animagine-xl", name: "Animagine XL (Anime Base)" },
     { id: "provider-2/kivotos-xl", name: "Kivotos XL (Blue Archive Style)" },
     
-    // Versatile / Speed / Specialized
+    // Versatile / Speed
     { id: "provider-2/dreamshaper", name: "Dreamshaper (Versatile Art/Realism)" },
     { id: "provider-2/playground-v2.5", name: "Playground V2.5 (Aesthetic HQ)" },
     { id: "provider-2/realism-illustrious", name: "Realism Illustrious (SD 1.5 Illustration)" },
     { id: "provider-2/sdxl-flash", name: "SDXL Flash (Speed Optimized)" },
     { id: "provider-2/opencole-sdxl", name: "Opencole SDXL (Graphic Design Focus)" },
+
+    // Specialized / NSFW 👈 **NEW SECTION**
+    { id: "provider-2/babes-by-stable-yogi-xl", name: "Babes by Stable Yogi XL (Specialized)" }, // 👈 **ADDED**
+    { id: "provider-2/nsfw-gen", name: "NSFW Gen (Explicit Content)" }, // 👈 **ADDED**
 ];
 
 // 🌟 IMAGE GENERATION (HTTP FETCH)
