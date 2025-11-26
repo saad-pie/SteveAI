@@ -204,12 +204,34 @@
     const modelSelect = document.getElementById("modelSelect");
     const numImagesSelect = document.getElementById("numImagesSelect");
 
-    // Helper map to translate provider IDs to display names
+    // Helper map to translate general provider IDs to display names
     const PROVIDER_NAMES = {
-        'provider-4': 'Provider 4 (Official/Proprietary)',
-        'provider-5': 'Provider 5 (Official/Proprietary)',
-        'provider-2': 'Provider 2 (Community Stable Diffusion)'
+        'provider-4': '🌟 Provider 4 (Official/Proprietary)',
+        'provider-5': '🌟 Provider 5 (Official/Proprietary)',
+        // Provider 2 models will be grouped by style (e.g., Photorealism, Anime)
+        'provider-2': '🛠️ Provider 2 Models' 
     };
+
+    /**
+     * Determines the specific group name for a Provider 2 community model based on its display name.
+     * This provides finer-grained grouping for community models.
+     */
+    function getProvider2GroupName(modelName) {
+        const lowerName = modelName.toLowerCase();
+        
+        if (lowerName.includes('realism') || lowerName.includes('photoreal')) {
+            return 'Photorealism / Hyper-Realism';
+        }
+        if (lowerName.includes('animagine') || lowerName.includes('kivotos') || lowerName.includes('illustration')) {
+            return 'Anime / Illustration';
+        }
+        if (lowerName.includes('babes') || lowerName.includes('nsfw')) {
+            return 'Specialized / NSFW';
+        }
+        // Default group for remaining P2 models (Dreamshaper, Playground, Flash, Opencole, etc.)
+        return 'Versatile / Speed / Base';
+    }
+
 
     function populateModelSelect() {
         if (typeof IMAGE_MODELS === 'undefined' || !Array.isArray(IMAGE_MODELS)) {
@@ -217,23 +239,44 @@
             return;
         }
 
-        // 1. Group models by provider
-        const groupedModels = IMAGE_MODELS.reduce((acc, model) => {
-            const providerId = model.id.split('/')[0]; // e.g., 'provider-4'
-            if (!acc[providerId]) {
-                acc[providerId] = [];
+        // 1. Group models by specific display group (Provider 4/5 groups are provider ID, Provider 2 uses style groups)
+        const groupedModels = {};
+
+        IMAGE_MODELS.forEach((model) => {
+            const providerId = model.id.split('/')[0];
+
+            let groupKey;
+            if (providerId === 'provider-2') {
+                // Use a finer-grained style group for Provider 2
+                groupKey = getProvider2GroupName(model.name);
+            } else {
+                // Use the main provider ID for other models
+                groupKey = providerId;
             }
-            acc[providerId].push(model);
-            return acc;
-        }, {});
+
+            if (!groupedModels[groupKey]) {
+                groupedModels[groupKey] = [];
+            }
+            groupedModels[groupKey].push(model);
+        });
 
         // 2. Iterate through groups and create <optgroup> elements
         let isFirst = true;
-        for (const providerId in groupedModels) {
+        // Sort keys to maintain a logical order: P4, P5, then P2 style groups
+        const sortedKeys = Object.keys(groupedModels).sort((a, b) => {
+            if (a.startsWith('provider-4')) return -1;
+            if (b.startsWith('provider-4')) return 1;
+            if (a.startsWith('provider-5')) return -1;
+            if (b.startsWith('provider-5')) return 1;
+            return 0; // Maintain order for P2 sub-groups
+        });
+        
+        for (const groupKey of sortedKeys) {
             const optgroup = document.createElement('optgroup');
-            optgroup.label = PROVIDER_NAMES[providerId] || providerId;
+            // Use the groupKey directly for P2 style groups, and the map for P4/P5
+            optgroup.label = PROVIDER_NAMES[groupKey] || groupKey; 
             
-            groupedModels[providerId].forEach((model) => {
+            groupedModels[groupKey].forEach((model) => {
                 const option = document.createElement('option');
                 option.value = model.id;
                 option.textContent = model.name;
