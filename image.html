@@ -204,23 +204,49 @@
     const modelSelect = document.getElementById("modelSelect");
     const numImagesSelect = document.getElementById("numImagesSelect");
 
+    // Helper map to translate provider IDs to display names
+    const PROVIDER_NAMES = {
+        'provider-4': 'Provider 4 (Official/Proprietary)',
+        'provider-5': 'Provider 5 (Official/Proprietary)',
+        'provider-2': 'Provider 2 (Community Stable Diffusion)'
+    };
+
     function populateModelSelect() {
-        // Ensure IMAGE_MODELS is defined and iterable
         if (typeof IMAGE_MODELS === 'undefined' || !Array.isArray(IMAGE_MODELS)) {
             console.error("IMAGE_MODELS is not correctly defined in image.js");
             return;
         }
 
-        IMAGE_MODELS.forEach((model) => {
-            const option = document.createElement('option');
-            option.value = model.id;
-            option.textContent = model.name;
-            // Setting a default value based on ID (or just the first one if the ID isn't guaranteed)
-            if (model.id === "provider-4/imagen-4" || model === IMAGE_MODELS[0]) { 
-                option.selected = true; 
+        // 1. Group models by provider
+        const groupedModels = IMAGE_MODELS.reduce((acc, model) => {
+            const providerId = model.id.split('/')[0]; // e.g., 'provider-4'
+            if (!acc[providerId]) {
+                acc[providerId] = [];
             }
-            modelSelect.appendChild(option);
-        });
+            acc[providerId].push(model);
+            return acc;
+        }, {});
+
+        // 2. Iterate through groups and create <optgroup> elements
+        let isFirst = true;
+        for (const providerId in groupedModels) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = PROVIDER_NAMES[providerId] || providerId;
+            
+            groupedModels[providerId].forEach((model) => {
+                const option = document.createElement('option');
+                option.value = model.id;
+                option.textContent = model.name;
+
+                // Set a sensible default (e.g., the first model in the list)
+                if (isFirst) { 
+                    option.selected = true; 
+                    isFirst = false;
+                }
+                optgroup.appendChild(option);
+            });
+            modelSelect.appendChild(optgroup);
+        }
     }
 
     populateModelSelect();
