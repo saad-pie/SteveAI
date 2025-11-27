@@ -1,10 +1,11 @@
 // tts.js
 
-// **Crucial Security Note:** The Gemini API Key (AIzaSyCjZE22ItiznexzYSjGHtO1C17Pg11y_So) 
-// is NOT used here. It MUST be used only on your secure backend orchestrator (e.g., Netlify Function).
+// ⚠️ WARNING: API KEY EXPOSED! This is for development/testing ONLY.
+// The key (AIzaSyCjZE22ItiznexzYSjGHtO1C17Pg11y_So) is now visible in the browser's source code.
+const API_KEY = "AIzaSyCjZE22ItiznexzYSjGHtO1C17Pg11y_So"; 
 
-// The endpoint for your *backend* proxy on the SteveAI server
-const BACKEND_TTS_ENDPOINT = "https://steve-ai.netlify.app/.netlify/functions/tts-proxy"; 
+// The official Gemini TTS endpoint URL
+const GEMINI_TTS_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent';
 const MODEL_ID = "gemini-2.5-flash-preview-tts"; 
 
 // Voice options based on common BCP-47 codes supported by Gemini-TTS
@@ -18,7 +19,6 @@ const VOICE_OPTIONS = {
         { value: 'Achernar', name: 'Achernar (Soft UK, M)' },
         { value: 'Achird', name: 'Achird (Friendly UK, M)' }
     ],
-    // Add more voice options as needed for other languages
 };
 
 // --- Parameter Handling ---
@@ -47,20 +47,16 @@ function updateVoiceOptions() {
     }
 }
 
-// Attach event listener to update voices when language changes
 document.getElementById('language').addEventListener('change', updateVoiceOptions);
-
-// Initialize voices on load
 document.addEventListener('DOMContentLoaded', updateVoiceOptions);
 
 
-// --- Form Submission Logic ---
+// --- Form Submission and Direct API Call ---
 
 document.getElementById('ttsForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const text = document.getElementById('inputText').value;
-    const language = document.getElementById('language').value;
     const voice = document.getElementById('voice').value;
     const emotion = document.getElementById('emotion').value;
     const statusMessage = document.getElementById('statusMessage');
@@ -69,52 +65,56 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
     // Reset output
     audioPlayer.style.display = 'none';
     audioPlayer.src = '';
-    statusMessage.textContent = 'Generating audio via SteveAI Orchestrator...';
+    statusMessage.textContent = 'Generating audio directly with Gemini API...';
 
-    // Construct the text prompt, integrating the emotional style for Gemini's processing
+    // 1. Construct the text prompt
     const fullPrompt = emotion 
         ? `In a ${emotion} voice, say: "${text}"`
         : text;
 
-    // Prepare the request data for your backend
-    const requestData = {
-        prompt: fullPrompt,
-        language: language,
-        voice: voice,
-        model: MODEL_ID,
+    // 2. Prepare the request body for the Gemini API
+    const requestBody = {
+        contents: [{ parts: [{ text: fullPrompt }] }],
+        config: {
+            // CRITICAL: Request AUDIO output
+            responseModalities: ['AUDIO'], 
+            speechConfig: {
+                voice: { name: voice }
+            }
+        }
     };
 
     try {
-        // Send the request to your secure backend endpoint
-        const response = await fetch(BACKEND_TTS_ENDPOINT, {
+        // 3. Send the request directly to the Gemini endpoint, including the API key in the header
+        const response = await fetch(GEMINI_TTS_ENDPOINT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                // API KEY IS EXPOSED HERE:
+                'x-goog-api-key': API_KEY 
             },
-            body: JSON.stringify(requestData)
+            body: JSON.stringify(requestBody)
         });
 
         if (!response.ok) {
-            let errorMessage = `Server responded with status ${response.status}.`;
-            // Check if the server provided a body with more details
-            try {
-                const errorText = await response.text();
-                // Check for 404 specifically, as this is the most common issue
-                if (response.status === 404) {
-                    errorMessage = `❌ Server Endpoint Not Found (404). Please ensure 'tts-proxy.js' is correctly deployed in the '.netlify/functions/' directory.`;
-                } else {
-                    errorMessage += ` Server Detail: ${errorText}`;
-                }
-            } catch (err) {
-                // Ignore if reading the error text fails
-            }
-            throw new Error(errorMessage);
+            const errorText = await response.text();
+            throw new Error(`Gemini API Error: Status ${response.status}. Detail: ${errorText.substring(0, 100)}...`);
         }
 
-        // The backend should return the audio as a playable format (e.g., a WAV file blob)
-        const audioBlob = await response.blob(); 
+        // 4. Extract the raw Base64 audio data from the response
+        const geminiResponse = await response.json();
+        const base64AudioData = geminiResponse.candidates[0].content.parts[0].inlineData.data;
+
+        // 5. Convert Base64 data to a Blob and create an audio URL
+        // The data is L16 (linear PCM). Browsers often require a proper header (like WAV)
+        // or a specific type for the audio/wav Blob to play correctly. 
+        // NOTE: This direct approach may still fail due to the lack of L16-to-WAV conversion.
+        const binaryAudio = new Uint8Array(
+            atob(base64AudioData).split('').map(char => char.charCodeAt(0))
+        );
         
-        // Create a URL for the audio and set the player source
+        // **This step is where the browser might fail due to missing WAV header.**
+        const audioBlob = new Blob([binaryAudio], { type: 'audio/wav' }); 
         const audioUrl = URL.createObjectURL(audioBlob);
         
         audioPlayer.src = audioUrl;
@@ -125,7 +125,6 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error('TTS Generation Error:', error);
-        statusMessage.textContent = `❌ Error generating speech. Details: ${error.message}`;
+        statusMessage.textContent = `❌ Error generating speech. Details: ${error.message}. You may need a backend to convert L16 audio to WAV/MP3.`;
     }
 });
-            
