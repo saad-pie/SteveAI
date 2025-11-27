@@ -1,13 +1,16 @@
-/* tts.css - Styling for SteveAI-tts Generator */
+/* tts.css - Enhanced Styling for SteveAI-tts Generator */
 
 /* 1. Basic Reset and Page Setup */
 :root {
-    --primary-color: #007bff; /* SteveAI Blue */
-    --secondary-color: #343a40; /* Dark text/background */
-    --accent-color: #28a745; /* Success/Button hover */
-    --background-light: #f8f9fa; 
+    --primary-color: #007bff;        /* SteveAI Blue */
+    --secondary-color: #343a40;       /* Dark text/headings */
+    --text-color: #495057;            /* Slightly lighter body text */
+    --accent-color: #0056b3;          /* Darker blue for hover/focus */
+    --success-color: #28a745;         /* Success/Accent hover (retained) */
+    --background-light: #f8f9fa;      /* Light page background */
     --border-color: #ced4da;
-    --font-family: Arial, sans-serif;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Lighter, smoother shadow */
+    --font-family: 'Segoe UI', Roboto, Arial, sans-serif; /* Modern, readable font stack */
 }
 
 body {
@@ -16,12 +19,12 @@ body {
     margin: 0;
     padding: 0;
     background-color: var(--background-light);
-    color: var(--secondary-color);
+    color: var(--text-color); /* Use a specific text color variable */
     display: flex;
     justify-content: center;
     align-items: flex-start;
     min-height: 100vh;
-    padding-top: 20px;
+    padding: 40px 20px; /* Increased padding top/bottom */
 }
 
 /* 2. Header and Main Container */
@@ -33,41 +36,52 @@ header {
 
 main {
     background-color: white;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 40px; /* Slightly increased padding */
+    border-radius: 10px; /* Softer rounded corners */
+    box-shadow: var(--box-shadow);
     width: 100%;
-    max-width: 700px;
+    max-width: 750px; /* Slightly wider main container */
 }
 
 h1 {
     color: var(--primary-color);
     border-bottom: 2px solid var(--primary-color);
-    padding-bottom: 10px;
+    padding-bottom: 12px;
     margin-top: 0;
+    font-size: 2.2rem; /* Larger, more prominent heading */
 }
 
 /* 3. Form Styling */
 #ttsForm {
-    display: grid;
-    gap: 20px;
+    display: flex; /* Changed to flex for better vertical flow control */
+    flex-direction: column;
+    gap: 25px; /* Increased gap */
     margin-bottom: 30px;
 }
 
 label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+    margin-bottom: 6px;
+    font-weight: 600; /* Bolder font weight */
     color: var(--secondary-color);
+    font-size: 1rem;
 }
 
 textarea, input[type="text"], select {
     width: 100%;
-    padding: 10px;
+    padding: 12px; /* Increased input padding */
     border: 1px solid var(--border-color);
-    border-radius: 4px;
-    box-sizing: border-box; /* Include padding in the element's total width and height */
-    font-size: 16px;
+    border-radius: 6px; /* Slightly softer input corners */
+    box-sizing: border-box; 
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+/* Add focus states for accessibility and polish */
+textarea:focus, input[type="text"]:focus, select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    outline: none;
 }
 
 textarea {
@@ -76,73 +90,97 @@ textarea {
 
 fieldset {
     border: 1px solid var(--border-color);
-    padding: 20px;
-    border-radius: 4px;
+    padding: 25px; /* Increased fieldset padding */
+    border-radius: 6px;
+    /* Use gap instead of margin-top on labels inside fieldset */
+    display: grid;
+    gap: 20px; /* Space between parameter groups */
 }
 
 legend {
-    font-weight: bold;
+    font-weight: 700;
     padding: 0 10px;
     color: var(--primary-color);
+    font-size: 1.1rem;
 }
 
-/* Arrange select boxes in a 2-column layout */
-fieldset > label {
-    margin-top: 10px;
-}
-
-/* Grid layout for parameters */
-fieldset > div {
+/* New: Consistent grid layout for the parameter selectors */
+.parameter-group {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
 }
 
+/* The emotion input can span both columns if preferred, or sit alone */
+#emotion {
+    grid-column: 1 / span 2; 
+}
+/* If using the HTML structure as provided, we need to adjust the selectors: */
+fieldset > label {
+    margin-top: 0; /* Remove old margin-top */
+}
+
 /* 4. Button Styling */
 button[type="submit"] {
+    /* Use a standard block style button */
+    align-self: flex-start; /* Aligns the button to the start of the form */
     background-color: var(--primary-color);
     color: white;
-    padding: 12px 20px;
+    padding: 14px 25px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px; 
     cursor: pointer;
-    font-size: 18px;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 button[type="submit"]:hover {
     background-color: var(--accent-color);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+button[type="submit"]:active {
+    background-color: #004085;
 }
 
 /* 5. Output Section Styling */
 #output {
-    padding-top: 20px;
-    border-top: 1px dashed var(--border-color);
+    padding-top: 30px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1); /* Solid, subtle divider */
 }
 
 h2 {
     color: var(--secondary-color);
     margin-bottom: 15px;
+    font-size: 1.8rem;
 }
 
 #audioPlayer {
     width: 100%;
     margin-top: 10px;
-    display: none; /* Hidden by default in tts.js until audio is generated */
+    display: none; 
 }
 
 #statusMessage {
-    margin-top: 15px;
-    padding: 10px;
-    border-radius: 4px;
-    /* Basic style for visibility */
-    background-color: #fff3cd; 
-    color: #856404;
-    font-style: italic;
+    margin-top: 20px;
+    padding: 12px 15px;
+    border-radius: 6px;
+    font-style: normal; /* Use normal style */
+    font-weight: 500;
+    /* Styles for default/loading state */
+    background-color: #e2e6ea; 
+    color: #383d41;
+}
+
+/* Specific error state (optional, can be done via JS, but good to define) */
+.error {
+    background-color: #f8d7da; /* Light red/pink */
+    color: #721c24; /* Dark red text */
+    border: 1px solid #f5c6cb;
 }
 
 #statusMessage:empty {
-    /* Hide the status box completely when there's no message */
     display: none; 
-  }
+}
