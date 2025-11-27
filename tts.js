@@ -2,12 +2,9 @@
 
 // ⚠️ WARNING: API KEY EXPOSED! This is for development/testing ONLY.
 const API_KEY = "AIzaSyCjZE22ItiznexzYSjGHtO1C17Pg11y_So"; 
-
-// The official Gemini TTS endpoint URL
 const GEMINI_TTS_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent';
 const MODEL_ID = "gemini-2.5-flash-preview-tts"; 
 
-// Voice options based on common BCP-47 codes supported by Gemini-TTS
 const VOICE_OPTIONS = {
     'en-US': [
         { value: 'Kore', name: 'Kore (Neutral US, F)' },
@@ -20,18 +17,10 @@ const VOICE_OPTIONS = {
     ],
 };
 
-// --- Parameter Handling ---
-
-/**
- * Updates the voice dropdown based on the selected language.
- */
 function updateVoiceOptions() {
     const language = document.getElementById('language').value;
     const voiceSelect = document.getElementById('voice');
-    
-    // Clear existing options
     voiceSelect.innerHTML = ''; 
-
     const voices = VOICE_OPTIONS[language] || [];
     
     if (voices.length === 0) {
@@ -50,8 +39,6 @@ document.getElementById('language').addEventListener('change', updateVoiceOption
 document.addEventListener('DOMContentLoaded', updateVoiceOptions);
 
 
-// --- Form Submission and Direct API Call ---
-
 document.getElementById('ttsForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -61,12 +48,10 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
     const statusMessage = document.getElementById('statusMessage');
     const audioPlayer = document.getElementById('audioPlayer');
     
-    // Reset output
     audioPlayer.style.display = 'none';
     audioPlayer.src = '';
     statusMessage.textContent = 'Generating audio directly with Gemini API...';
 
-    // 1. Construct the text prompt
     const fullPrompt = emotion 
         ? `In a ${emotion} voice, say: "${text}"`
         : text;
@@ -98,7 +83,7 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
             throw new Error(`Gemini API Error: Status ${response.status}. Detail: ${errorText.substring(0, 100)}...`);
         }
 
-        // 4. Extract the raw Base64 audio data from the response
+        // 4. Extract the raw Base64 audio data
         const geminiResponse = await response.json();
         const base64AudioData = geminiResponse.candidates[0].content.parts[0].inlineData.data;
 
@@ -107,7 +92,6 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
             atob(base64AudioData).split('').map(char => char.charCodeAt(0))
         );
         
-        // This Blob creation is the best a browser can do without a backend for header conversion.
         const audioBlob = new Blob([binaryAudio], { type: 'audio/wav' }); 
         const audioUrl = URL.createObjectURL(audioBlob);
         
