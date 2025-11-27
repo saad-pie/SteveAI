@@ -1,14 +1,13 @@
 // tts.js
 
-// **Crucial Security Note:** The Gemini API Key must NOT be exposed here. 
-// It MUST be used only on your secure backend orchestrator (e.g., Netlify Function).
+// **Crucial Security Note:** The Gemini API Key (AIzaSyCjZE22ItiznexzYSjGHtO1C17Pg11y_So) 
+// is NOT used here. It MUST be used only on your secure backend orchestrator (e.g., Netlify Function).
 
 // The endpoint for your *backend* proxy on the SteveAI server
 const BACKEND_TTS_ENDPOINT = "https://steve-ai.netlify.app/.netlify/functions/tts-proxy"; 
 const MODEL_ID = "gemini-2.5-flash-preview-tts"; 
 
 // Voice options based on common BCP-47 codes supported by Gemini-TTS
-// This should ideally be loaded dynamically or fetched from a cache
 const VOICE_OPTIONS = {
     'en-US': [
         { value: 'Kore', name: 'Kore (Neutral US, F)' },
@@ -19,11 +18,10 @@ const VOICE_OPTIONS = {
         { value: 'Achernar', name: 'Achernar (Soft UK, M)' },
         { value: 'Achird', name: 'Achird (Friendly UK, M)' }
     ],
-    'fr-FR': [
-        { value: 'Aoede', name: 'Aoede (Breezy French, F)' }
-    ],
     // Add more voice options as needed for other languages
 };
+
+// --- Parameter Handling ---
 
 /**
  * Updates the voice dropdown based on the selected language.
@@ -56,6 +54,8 @@ document.getElementById('language').addEventListener('change', updateVoiceOption
 document.addEventListener('DOMContentLoaded', updateVoiceOptions);
 
 
+// --- Form Submission Logic ---
+
 document.getElementById('ttsForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -71,13 +71,12 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
     audioPlayer.src = '';
     statusMessage.textContent = 'Generating audio via SteveAI Orchestrator...';
 
-    // 1. Construct the text prompt, integrating the emotional style for Gemini's processing
-    // Note: The prompt uses natural language to guide the tone/style, leveraging Gemini's capability.
+    // Construct the text prompt, integrating the emotional style for Gemini's processing
     const fullPrompt = emotion 
         ? `In a ${emotion} voice, say: "${text}"`
         : text;
 
-    // 2. Prepare the request data for your backend
+    // Prepare the request data for your backend
     const requestData = {
         prompt: fullPrompt,
         language: language,
@@ -86,7 +85,7 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
     };
 
     try {
-        // 3. Send the request to your secure backend endpoint
+        // Send the request to your secure backend endpoint
         const response = await fetch(BACKEND_TTS_ENDPOINT, {
             method: 'POST',
             headers: {
@@ -96,15 +95,26 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
         });
 
         if (!response.ok) {
-            // Read error message from the backend response body
-            const errorText = await response.text();
-            throw new Error(`Server responded with status ${response.status}: ${errorText}`);
+            let errorMessage = `Server responded with status ${response.status}.`;
+            // Check if the server provided a body with more details
+            try {
+                const errorText = await response.text();
+                // Check for 404 specifically, as this is the most common issue
+                if (response.status === 404) {
+                    errorMessage = `❌ Server Endpoint Not Found (404). Please ensure 'tts-proxy.js' is correctly deployed in the '.netlify/functions/' directory.`;
+                } else {
+                    errorMessage += ` Server Detail: ${errorText}`;
+                }
+            } catch (err) {
+                // Ignore if reading the error text fails
+            }
+            throw new Error(errorMessage);
         }
 
-        // 4. The backend should return the audio as a playable format (e.g., a WAV file blob)
+        // The backend should return the audio as a playable format (e.g., a WAV file blob)
         const audioBlob = await response.blob(); 
         
-        // 5. Create a URL for the audio and set the player source
+        // Create a URL for the audio and set the player source
         const audioUrl = URL.createObjectURL(audioBlob);
         
         audioPlayer.src = audioUrl;
@@ -118,3 +128,4 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
         statusMessage.textContent = `❌ Error generating speech. Details: ${error.message}`;
     }
 });
+            
