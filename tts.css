@@ -4,13 +4,19 @@
 :root {
     --primary-color: #007bff;        /* SteveAI Blue */
     --secondary-color: #343a40;       /* Dark text/headings */
-    --text-color: #495057;            /* Slightly lighter body text */
+    --text-color: #495057;            /* Body text */
     --accent-color: #0056b3;          /* Darker blue for hover/focus */
-    --success-color: #28a745;         /* Success/Accent hover (retained) */
+    --success-color: #28a745;         /* Success state */
+    --error-color: #dc3545;           /* Error state */
     --background-light: #f8f9fa;      /* Light page background */
     --border-color: #ced4da;
-    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Lighter, smoother shadow */
-    --font-family: 'Segoe UI', Roboto, Arial, sans-serif; /* Modern, readable font stack */
+    --box-shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.05); /* Very light shadow */
+    --box-shadow-main: 0 8px 20px rgba(0, 0, 0, 0.1); /* Deeper shadow for main container */
+    --font-family: 'Segoe UI', Roboto, Arial, sans-serif; 
+}
+
+*, *::before, *::after {
+    box-sizing: border-box; /* Ensure padding and border are included in element's total width and height */
 }
 
 body {
@@ -19,12 +25,12 @@ body {
     margin: 0;
     padding: 0;
     background-color: var(--background-light);
-    color: var(--text-color); /* Use a specific text color variable */
+    color: var(--text-color);
     display: flex;
     justify-content: center;
     align-items: flex-start;
     min-height: 100vh;
-    padding: 40px 20px; /* Increased padding top/bottom */
+    padding: 40px 10px; /* Responsive padding */
 }
 
 /* 2. Header and Main Container */
@@ -36,51 +42,53 @@ header {
 
 main {
     background-color: white;
-    padding: 40px; /* Slightly increased padding */
-    border-radius: 10px; /* Softer rounded corners */
-    box-shadow: var(--box-shadow);
+    padding: 40px; 
+    border-radius: 12px; /* Slightly softer rounded corners */
+    box-shadow: var(--box-shadow-main);
     width: 100%;
-    max-width: 750px; /* Slightly wider main container */
+    max-width: 750px; 
+    transition: box-shadow 0.3s ease;
 }
 
 h1 {
     color: var(--primary-color);
-    border-bottom: 2px solid var(--primary-color);
-    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color); /* Lighter divider */
+    padding-bottom: 15px;
     margin-top: 0;
-    font-size: 2.2rem; /* Larger, more prominent heading */
+    font-size: 2.2rem;
+    font-weight: 600;
 }
 
 /* 3. Form Styling */
 #ttsForm {
-    display: flex; /* Changed to flex for better vertical flow control */
+    display: flex; 
     flex-direction: column;
-    gap: 25px; /* Increased gap */
+    gap: 25px; 
     margin-bottom: 30px;
 }
 
 label {
     display: block;
     margin-bottom: 6px;
-    font-weight: 600; /* Bolder font weight */
+    font-weight: 600;
     color: var(--secondary-color);
     font-size: 1rem;
 }
 
 textarea, input[type="text"], select {
     width: 100%;
-    padding: 12px; /* Increased input padding */
+    padding: 12px; 
     border: 1px solid var(--border-color);
-    border-radius: 6px; /* Slightly softer input corners */
-    box-sizing: border-box; 
+    border-radius: 8px; /* Consistent rounded corners */
     font-size: 1rem;
     transition: border-color 0.3s, box-shadow 0.3s;
+    background-color: #ffffff; /* Explicitly white background */
 }
 
-/* Add focus states for accessibility and polish */
+/* Focus states for accessibility and polish */
 textarea:focus, input[type="text"]:focus, select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2); /* Softer focus ring */
     outline: none;
 }
 
@@ -90,11 +98,11 @@ textarea {
 
 fieldset {
     border: 1px solid var(--border-color);
-    padding: 25px; /* Increased fieldset padding */
-    border-radius: 6px;
-    /* Use gap instead of margin-top on labels inside fieldset */
-    display: grid;
-    gap: 20px; /* Space between parameter groups */
+    padding: 25px; 
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Space between rows of parameters */
 }
 
 legend {
@@ -104,83 +112,120 @@ legend {
     font-size: 1.1rem;
 }
 
-/* New: Consistent grid layout for the parameter selectors */
+/* Grouping parameter selectors for inline layout */
 .parameter-group {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Responsive grid for selectors */
     gap: 20px;
 }
 
-/* The emotion input can span both columns if preferred, or sit alone */
-#emotion {
-    grid-column: 1 / span 2; 
+/* Ensure individual parameter elements take full width inside their grid cell */
+.parameter-group > div {
+    display: flex;
+    flex-direction: column;
 }
-/* If using the HTML structure as provided, we need to adjust the selectors: */
-fieldset > label {
-    margin-top: 0; /* Remove old margin-top */
+
+/* Emotion input spans full width below the dropdowns */
+#emotion-group {
+    grid-column: 1 / -1; 
 }
+
 
 /* 4. Button Styling */
 button[type="submit"] {
-    /* Use a standard block style button */
-    align-self: flex-start; /* Aligns the button to the start of the form */
+    align-self: flex-start; 
     background-color: var(--primary-color);
     color: white;
-    padding: 14px 25px;
+    padding: 14px 28px; /* Slightly larger padding */
     border: none;
-    border-radius: 6px; 
+    border-radius: 8px; 
     cursor: pointer;
     font-size: 1.1rem;
     font-weight: 700;
     letter-spacing: 0.5px;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: var(--box-shadow-subtle);
+    transition: background-color 0.3s ease, transform 0.1s ease;
 }
 
 button[type="submit"]:hover {
     background-color: var(--accent-color);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 button[type="submit"]:active {
     background-color: #004085;
+    transform: translateY(1px); /* Little press effect */
 }
 
 /* 5. Output Section Styling */
 #output {
     padding-top: 30px;
-    border-top: 1px solid rgba(0, 0, 0, 0.1); /* Solid, subtle divider */
+    border-top: 1px solid rgba(0, 0, 0, 0.1); 
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
 h2 {
     color: var(--secondary-color);
-    margin-bottom: 15px;
     font-size: 1.8rem;
+    font-weight: 600;
 }
 
 #audioPlayer {
     width: 100%;
-    margin-top: 10px;
+    border-radius: 8px;
+    box-shadow: var(--box-shadow-subtle);
+    background-color: #e9ecef;
     display: none; 
 }
 
 #statusMessage {
-    margin-top: 20px;
+    margin-top: 5px;
     padding: 12px 15px;
-    border-radius: 6px;
-    font-style: normal; /* Use normal style */
+    border-radius: 8px;
+    font-style: italic;
     font-weight: 500;
-    /* Styles for default/loading state */
-    background-color: #e2e6ea; 
-    color: #383d41;
+    border-left: 5px solid var(--primary-color); /* Highlight with primary color */
+    background-color: #e7f3ff; /* Very light blue background */
+    color: var(--primary-color);
+    transition: all 0.3s ease;
 }
 
-/* Specific error state (optional, can be done via JS, but good to define) */
-.error {
-    background-color: #f8d7da; /* Light red/pink */
-    color: #721c24; /* Dark red text */
-    border: 1px solid #f5c6cb;
+/* Status message for success/error clarity (requires adding classes via JS) */
+#statusMessage.success {
+    border-left-color: var(--success-color);
+    background-color: #d4edda;
+    color: var(--success-color);
+}
+#statusMessage.error {
+    border-left-color: var(--error-color);
+    background-color: #f8d7da;
+    color: var(--error-color);
 }
 
 #statusMessage:empty {
     display: none; 
 }
+
+/* 6. Responsiveness */
+@media (max-width: 600px) {
+    main {
+        padding: 25px;
+        margin: 0 10px;
+    }
+
+    h1 {
+        font-size: 1.8rem;
+    }
+
+    /* Stack selectors vertically on small screens */
+    .parameter-group {
+        grid-template-columns: 1fr;
+    }
+    
+    button[type="submit"] {
+        width: 100%; /* Full width button on mobile */
+        align-self: stretch;
+    }
+        }
