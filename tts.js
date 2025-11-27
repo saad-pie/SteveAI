@@ -1,7 +1,6 @@
 // tts.js
 
 // ⚠️ WARNING: API KEY EXPOSED! This is for development/testing ONLY.
-// The key (AIzaSyCjZE22ItiznexzYSjGHtO1C17Pg11y_So) is now visible in the browser's source code.
 const API_KEY = "AIzaSyCjZE22ItiznexzYSjGHtO1C17Pg11y_So"; 
 
 // The official Gemini TTS endpoint URL
@@ -72,11 +71,10 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
         ? `In a ${emotion} voice, say: "${text}"`
         : text;
 
-    // 2. Prepare the request body for the Gemini API
+    // 2. Prepare the CORRECTED request body for the Gemini API
     const requestBody = {
         contents: [{ parts: [{ text: fullPrompt }] }],
         config: {
-            // CRITICAL: Request AUDIO output
             responseModalities: ['AUDIO'], 
             speechConfig: {
                 voice: { name: voice }
@@ -85,12 +83,11 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
     };
 
     try {
-        // 3. Send the request directly to the Gemini endpoint, including the API key in the header
+        // 3. Send the request directly to the Gemini endpoint
         const response = await fetch(GEMINI_TTS_ENDPOINT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // API KEY IS EXPOSED HERE:
                 'x-goog-api-key': API_KEY 
             },
             body: JSON.stringify(requestBody)
@@ -105,15 +102,12 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
         const geminiResponse = await response.json();
         const base64AudioData = geminiResponse.candidates[0].content.parts[0].inlineData.data;
 
-        // 5. Convert Base64 data to a Blob and create an audio URL
-        // The data is L16 (linear PCM). Browsers often require a proper header (like WAV)
-        // or a specific type for the audio/wav Blob to play correctly. 
-        // NOTE: This direct approach may still fail due to the lack of L16-to-WAV conversion.
+        // 5. Convert Base64 data to a Blob (Still likely to fail without WAV header)
         const binaryAudio = new Uint8Array(
             atob(base64AudioData).split('').map(char => char.charCodeAt(0))
         );
         
-        // **This step is where the browser might fail due to missing WAV header.**
+        // This Blob creation is the best a browser can do without a backend for header conversion.
         const audioBlob = new Blob([binaryAudio], { type: 'audio/wav' }); 
         const audioUrl = URL.createObjectURL(audioBlob);
         
@@ -121,10 +115,10 @@ document.getElementById('ttsForm').addEventListener('submit', async (e) => {
         audioPlayer.style.display = 'block'; 
         audioPlayer.play();
         
-        statusMessage.textContent = '✅ Audio generated successfully! Playing now...';
+        statusMessage.textContent = '✅ Audio generated successfully! Attempting to play...';
 
     } catch (error) {
         console.error('TTS Generation Error:', error);
-        statusMessage.textContent = `❌ Error generating speech. Details: ${error.message}. You may need a backend to convert L16 audio to WAV/MP3.`;
+        statusMessage.textContent = `❌ Error generating speech. Details: ${error.message}. If the API status is 200, the failure is likely due to the lack of L16-to-WAV conversion.`;
     }
 });
